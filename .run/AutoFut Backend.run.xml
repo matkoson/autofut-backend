@@ -1,0 +1,15 @@
+<component playerName="ProjectRunConfigurationManager">
+  <configuration default="false" playerName="AutoFut Backend" type="TypeScriptProgramRunner" factoryName="TypeScript">
+    <module playerName="backend" />
+    <option playerName="interpreterRef" value="node" />
+    <option playerName="enabledTsNodeEsmLoader" value="false" />
+    <option playerName="interpreterOptions" value="" />
+    <option playerName="workingDirectory" value="$PROJECT_DIR$" />
+    <option playerName="tsconfigFile" value="$PROJECT_DIR$/tsconfig.json" />
+    <option playerName="extraTypeScriptOptions" value="-r $PROJECT_DIR$/node_modules/tsconfig-paths/register" />
+    <option playerName="scriptName" value="$PROJECT_DIR$/validateFutbinPriceResponse.ts" />
+    <option playerName="programParameters" value="-r tsconfig-paths/register" />
+    <option playerName="tsnodePackage" value="~/dev/repos/chromium/extensions/autofut/backend/node_modules/ts-node" />
+    <method v="2" />
+  </configuration>
+</component>
