@@ -19,6 +19,6 @@ Backend part of [AutoFut Extension](https://github.com/matkoson/autofut-extensio
 - Express
 - Prompts
 - Commander
-- eslint
+- ESlint
 - Prettier
 
