@@ -1,3 +1,4 @@
+/* eslint-disable id-length */
 import { pls } from './static/pls.js'
 
 export interface PlayerName {
@@ -26,6 +27,18 @@ const overrideIfNecessary = (player: PlayerName): PlayerName => {
     'Xabier Alonso Olano': {
       f: 'Xabi',
       l: 'Alonso',
+    },
+    'Ricardo Jorge da Luz Horta': {
+      f: 'Ricardo',
+      l: 'Horta',
+    },
+    'Sergio Ramos': {
+      f: 'Sergio',
+      l: 'Ramos',
+    },
+    'Renato Sanches': {
+      f: 'Renato',
+      l: 'Sanches',
     },
   }
 

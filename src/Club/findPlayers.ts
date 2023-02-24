@@ -1,7 +1,7 @@
-import { futbinStatsDefault } from '../scrapper/Futbin/default.js'
 import { ClubPlayer, ClubSummary, PlayerIdentity } from '../types/index.js'
 import lookupPlayer from '../data/lookupPlayer.js'
 import Logger from '../logger/index.js'
+import { defaultFutbinStatsData } from '../Scrapper/FutbinParser/default.js'
 
 const { logSuccess, logInfo, logWarn } = Logger
 type UpdateClubPlayer = (
@@ -27,7 +27,7 @@ const findPlayers = (
 
     const { f: firstName, l: lastName } = playerName
     logSuccess(
-      `[⚽️ PLAYER FOUND]: id: '${id}', name: 🤹‍ '${firstName} ${lastName}'`
+      `[⚽️ PLAYER FOUND ⚽️]: [🪪  id:'${id}' 🪪]\n> name: 🤹‍ '${firstName} ${lastName}'`
     )
 
     const { isUntradeable, ...restOfUnknownPlayer } = unknownClubPlayers.map[id]
@@ -43,7 +43,7 @@ const findPlayers = (
       id,
       identity: playerIdentity,
       isUntradeable,
-      futbin: futbinStatsDefault,
+      futbin: defaultFutbinStatsData,
       details: {
         ...restOfUnknownPlayer,
       },

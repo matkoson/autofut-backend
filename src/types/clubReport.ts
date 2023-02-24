@@ -1,4 +1,4 @@
-import { shallowClusterConfig } from '../scrapper/index.js'
+import { shallowClusterConfig } from '../Scrapper/index.js'
 
 import { ClubPlayer } from './api.js'
 
@@ -8,11 +8,12 @@ export interface ClubReport {
     tradeableCount: number
     playerCount: number
   }
-  playerList: ClubPlayer[]
-  tradeableList: ClubPlayer[]
-  untradeableList: ClubPlayer[]
-  futbinPriceNotUpdated: [string, string][]
-  unknownIds: string[]
+  clubPlayersMap: { [key: string]: ClubPlayer }
+  clubPlayersList: ClubPlayer[]
+  error: {
+    futbinPriceNotUpdated: [string, string][]
+    unknownIds: string[]
+  }
 }
 
 export interface EnhancedClubReport {

@@ -11,21 +11,17 @@ import Recaptcha from 'puppeteer-extra-plugin-recaptcha'
 import { Cluster } from 'puppeteer-cluster'
 
 import { PuppeteerExtra } from 'puppeteer-extra'
-import {
-  FutbinSearchResultsRowStats,
-  ValidFutbinSearchResultsRowStats,
-} from '@matkoson/parser'
 
 import saveFutbinPrice from '../Club/saveFutbinPrice.js'
 import { getTimestamp } from '../utils/index.js'
 import { ClubPlayer } from '../types/index.js'
 import Logger from '../logger/index.js'
-import { validateFutbinSearchResultsRowStats } from '../utils/validate/validateFutbinSearchResultsRowStats.js'
+import { validateFutbinStats } from '../utils/validate/validateFutbinStats.js'
 import { validateString } from '../utils/validate/index.js'
 
-import { SearchResultsRowStats } from './Futbin/types.js'
-import FutbinScrapper from './Futbin/index.js'
-import { futbinStatsDefault } from './Futbin/default.js'
+import FutbinParser from './FutbinParser/index.js'
+import { defaultFutbinStatsData } from './FutbinParser/default.js'
+import { FutbinStats } from './FutbinParser/types.js'
 
 const DEBUG = false
 
@@ -105,7 +101,7 @@ export default class Scrapper {
   static Instance: Scrapper
   browser: Browser | null = null
   puppeteer: Browser | null = null
-  futbinScrapper: FutbinScrapper | null = null
+  futbinScrapper: FutbinParser | null = null
 
   constructor() {
     if (Scrapper.Instance) {
@@ -159,21 +155,49 @@ export default class Scrapper {
     page: Page,
     textStructure?: string | null
   ) => {
-    logError(
-      `[🤬 ERROR REPORT]: Generating error report for player: '${playerName}'`
-    )
-    const playerDirPath = `./src/data/err/futbinPrice/(${playerName})(${rating})[${getTimestamp()}]`
-    if (!fs.existsSync(playerDirPath)) {
-      fs.mkdirSync(playerDirPath, { recursive: true })
-    }
+    try {
+      logError(
+        `[🤬 ERROR REPORT]: Generating error report for player: '${playerName}'`
+      )
+      const dirPath = `./src/data/err/futbinPrice`
+      // First, check if dir exists, if not, create it
+      if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true })
+      }
 
-    const timestamp = getTimestamp()
-    const path = `${playerDirPath}/${timestamp}`
+      const files = fs.readdirSync(dirPath)
 
-    await this.saveScreenshot(`${path}.png`, page)
-    await this.saveHtml(`${path}.html`, page)
-    if (textStructure) {
-      this.saveTextStructure(`${path}-text_structure.json`, textStructure)
+      const matchingDirs = files.filter((file) => {
+        return file.includes(playerName) && file.includes(rating)
+      })
+
+      if (matchingDirs.length > 0) {
+        const dirToRemove = matchingDirs[0]
+        fs.rmSync(`${dirPath}/${dirToRemove}`, { recursive: true })
+      }
+
+      const playerDirPath = `${dirPath}/(${playerName})(${rating})[${getTimestamp()}]`
+
+      if (!fs.existsSync(playerDirPath)) {
+        fs.mkdirSync(playerDirPath, { recursive: true })
+      }
+
+      const timestamp = getTimestamp()
+      const path = `${playerDirPath}/${timestamp}`
+
+      await this.saveScreenshot(`${path}.png`, page)
+      await this.saveHtml(`${path}.html`, page)
+
+      if (textStructure) {
+        this.saveTextStructure(`${path}-text_structure.json`, textStructure)
+      }
+    } catch (error) {
+      logError(
+        `[🤬 ERROR REPORT]: Error, while generating: ${
+          (error as Error).message
+        }`
+      )
+      console.error(error)
     }
   }
 
@@ -229,7 +253,7 @@ export default class Scrapper {
   }: {
     page: Page
     data: FutbinSearchPlayerScreenStatsTask
-  }): Promise<SearchResultsRowStats> => {
+  }): Promise<unknown> => {
     const { playerName, rating, url } = data
     await this.preparePage(page)
 
@@ -237,25 +261,57 @@ export default class Scrapper {
       throw new Error('Cluster is not initialized!')
     }
 
-    let futbinStats = futbinStatsDefault
+    let futbinStats = defaultFutbinStatsData
     try {
-      this.futbinScrapper = new FutbinScrapper(playerName, rating, page, url)
+      this.futbinScrapper = new FutbinParser(playerName, rating, page, url)
       futbinStats = await this.futbinScrapper.extract()
 
-      validateString(futbinStats.price, 'futbinStats.price')
-      console.log(
-        `[🎯 PRICE FOUND]: ###['${futbinStats.price}' coins 💰]###, player: ###('${playerName}')###, rating: ###('${rating}')###`
-      )
-      saveFutbinPrice(playerName, rating, futbinStats.price)
+      // validateFutbinStats(futbinStats)
+      validateString(futbinStats.prevPrices, 'prevPrices')
+      validateString(futbinStats.PACE, 'pace')
+      validateString(futbinStats.SHOOTING, 'shooting')
+      validateString(futbinStats.PASSING, 'passing')
+      validateString(futbinStats.DRIBBLING, 'dribbling')
+      validateString(futbinStats.DEFENDING, 'defending')
+      validateString(futbinStats.PHYSICALITY, 'physicality')
+      validateString(futbinStats.playerFutbinUrl, 'playerFutbinUrl')
+      validateString(futbinStats.firstName, 'firstName')
+      validateString(futbinStats.lastName, 'lastName')
 
-      validateFutbinSearchResultsRowStats(futbinStats)
-      console.log(`[🟢 100％ SUCCESS 🟢] for player: '${playerName}'!`)
+      Logger.logWithTimestamp(
+        `info`,
+        `[🟢 100% SUCCESS 🟢]:`,
+        `\nfor player: (⚽️ '${playerName.toUpperCase()}' ⚽️)(💯 '${rating}' 💯)!\n`
+      )
+      Logger.logWithTimestamp(
+        'info',
+        `[🟢 100% SUCCESS 🟢]:`,
+        `Stats: '${JSON.stringify(futbinStats, null, 2)}'!`
+      )
+      if (futbinStats.price === '0') {
+        Logger.logWithTimestamp(
+          'info',
+          `[🟢 PRICE '0' 🔵]:`,
+          ` Price is eq to '0'! Might be valid, might be not. Reporting!`
+        )
+
+        const textStructure = this.futbinScrapper?.debugFutbinStats()
+        await this.generateErrorReport(playerName, rating, page, textStructure)
+      }
       return futbinStats
     } catch (err) {
-      console.log(
-        `[🟡 NOT 100％ 🟡]: Not full success for player: '${playerName}', rating: '${rating}'! Reporting!`
+      Logger.logWithTimestamp(
+        'info',
+
+        `[🟡 NOT 100％ 🟡]:`,
+        ` player: ('${playerName}')('${rating}')! Reporting!`
       )
-      const textStructure = this.futbinScrapper?.getTextStructure()
+      Logger.logWithTimestamp(
+        'info',
+        `[🟡 NOT 100％ 🟡]:`,
+        `Stats '${JSON.stringify(futbinStats, null, 2)}'!`
+      )
+      const textStructure = this.futbinScrapper?.debugFutbinStats()
 
       await this.generateErrorReport(playerName, rating, page, textStructure)
       return futbinStats
@@ -295,6 +351,9 @@ export default class Scrapper {
     await this.cluster.close()
 
     logInfo('Cluster finished working!')
+
+    logInfo('Closing browser...')
+    this.browser?.close()
   }
 
   queueClusterTask = <ExpectedOutput, TaskData>(
@@ -305,7 +364,11 @@ export default class Scrapper {
     }
     const { CLUSTER_TASK, data, taskName } = taskConfig
 
-    logInfo(`[🍒 QUEUE]: Cluster task: ${taskName} queued!`)
+    Logger.logWithTimestamp(
+      'info',
+      `[🍒 QUEUE 🍒]:`,
+      `[CLUSTER_TASK]: ${taskName} queued!`
+    )
 
     const clusterTask = this.cluster.execute(data, CLUSTER_TASK)
 
@@ -321,7 +384,12 @@ export default class Scrapper {
     id: string,
     playerName: string,
     rating: string,
-    responseHandler: (id: string, futbinStats: SearchResultsRowStats) => void
+    responseHandler: (
+      id: string,
+      playerName: string,
+      rating: string,
+      futbinStats: FutbinStats
+    ) => void
   ) => {
     const url = `https://www.futbin.com/players?page=1&search=%27${playerName}%27`
     const taskConfig = {
@@ -336,7 +404,7 @@ export default class Scrapper {
     }
 
     const searchResultsRowStats = await this.queueClusterTask<
-      SearchResultsRowStats,
+      unknown,
       FutbinSearchPlayerScreenStatsTask
     >(taskConfig)
 
@@ -346,12 +414,17 @@ export default class Scrapper {
       )
     }
 
-    responseHandler(id, searchResultsRowStats)
+    responseHandler(id, playerName, rating, searchResultsRowStats)
   }
 
   scrapFutbinPlayers = async (
     playerList: ClubPlayer[],
-    responseHandler: (id: string, futbinStats: SearchResultsRowStats) => void
+    responseHandler: (
+      id: string,
+      playerName: string,
+      rating: string,
+      futbinStats: FutbinStats
+    ) => void
   ) => {
     for (let index = 0; index < playerList.length; index++) {
       const clubPlayer = playerList[index]

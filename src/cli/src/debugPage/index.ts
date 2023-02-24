@@ -1,4 +1,4 @@
-import FutbinScrapper from '../../../scrapper/Futbin/index.js'
+import FutbinScrapper from '../../../Scrapper/FutbinParser/index.js'
 
 import { initPuppeteer } from './initPuppeteer.js'
 
@@ -18,9 +18,7 @@ const debugPage = async (
   )
   const futbinStats = await futbinScrapper.extract()
   console.info('[🎎  DP]: Logging debug info...')
-  futbinScrapper.logDebug('textStructure')
-
-  console.info(JSON.stringify(futbinStats, null, 2))
+  // futbinScrapper.logDebug('textStructure')
 
   browser.close()
 

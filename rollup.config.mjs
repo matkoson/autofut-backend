@@ -1,6 +1,5 @@
-import dts from "rollup-plugin-dts";
 import esbuild from "rollup-plugin-esbuild";
-import { nodeResolve } from '@rollup/plugin-node-resolve';
+import { nodeResolve } from "@rollup/plugin-node-resolve";
 import json from "@rollup/plugin-json";
 // https://stackblitz.com/edit/node-gcuwxg?file=rollup.config.mjs
 import { createRequire } from "module";
@@ -16,7 +15,7 @@ const name = "index", sharedGlobals = {
 export const config = [
   {
     external: [
-      ...(Object.keys(pkg.devDependencies) || {}),
+      ...(Object.keys(pkg.devDependencies) || {})
       // ...(Object.keys(pkg.peerDependencies) || {}),
       // ...(Object.keys(packageJson.dependencies) || {}),
     ],
@@ -58,15 +57,15 @@ export const config = [
         globals: sharedGlobals
       }
     ]
-  },
-  {
-    input: "./src/index.ts",
-    plugins: [dts()],
-    output: {
-      file: `dist/${name}.d.ts`,
-      format: "es"
-    }
   }
+  // {
+  //     input: "./src/index.ts",
+  //     plugins: [dts()],
+  //     output: {
+  //       file: `dist/${name}.d.ts`,
+  //       format: "es"
+  //     }
+  //   }
 ];
 
 export default config;

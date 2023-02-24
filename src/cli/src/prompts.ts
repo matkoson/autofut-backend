@@ -4,8 +4,8 @@ import prompts, { Choice, PromptObject } from 'prompts'
 
 import handlePrompts from './handlePrompts.js'
 import {
-  getArchiveRawClubSummaryFilenames,
-  getLatestRawClubSummaryFilename,
+  getArchivedFutWebClubSummaryFilenames,
+  getLatestFutWebClubSummaryFilename,
 } from './utils/index.js'
 
 const prompt = async () => {
@@ -22,7 +22,7 @@ const prompt = async () => {
       message: (prev: string) => {
         switch (prev) {
           case 'makeClubReport':
-            return `Select the 'rawClubSummary' file version you want to use`
+            return `Select the 'futWebClubSummary' file version you want to use`
           default:
             return ''
         }
@@ -38,20 +38,20 @@ const prompt = async () => {
       choices: (prev: string) => {
         switch (prev) {
           case 'makeClubReport':
-            const latestRawClubSummaryFilename =
-              getLatestRawClubSummaryFilename()
-            const archiveRawClubSummaryFilenames =
-              getArchiveRawClubSummaryFilenames()
+            const latestFutWebClubSummaryFilename =
+              getLatestFutWebClubSummaryFilename()
+            const archiveFutWebClubSummaryFilenames =
+              getArchivedFutWebClubSummaryFilenames()
 
             return [
               {
                 title: `[LATEST]: ${path.basename(
-                  latestRawClubSummaryFilename
+                  latestFutWebClubSummaryFilename
                 )}`,
-                value: latestRawClubSummaryFilename,
-                description: `Latest 'rawClubSummary' available`,
+                value: latestFutWebClubSummaryFilename,
+                description: `Latest 'futWebClubSummary' available`,
               },
-              ...archiveRawClubSummaryFilenames,
+              ...archiveFutWebClubSummaryFilenames,
             ] as const
           default:
             throw new Error("Couldn't find choices for second prompt!")
@@ -61,8 +61,6 @@ const prompt = async () => {
   ] as PromptObject<string>[]
 
   const response = await prompts([...questions])
-
-  console.log('response', response)
 
   handlePrompts(response)
 }

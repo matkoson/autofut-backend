@@ -1,4 +1,8 @@
 /* eslint-disable func-style*/
+import Logger from '../../logger/index.js'
+
+const { logWithTimestamp } = Logger
+
 export function createValidationError(message: string): Error {
   const error = new Error(message)
   error.name = 'ValidationError'
@@ -30,6 +34,7 @@ export function validateString(
   field: string
 ): asserts value is string {
   if (typeof value !== 'string') {
+    logWithTimestamp('error', `[🔴 VALIDATION FAILED 🔴]:`, `${field}`)
     throw createValidationError(
       `${field}: expected string but got ${typeof value}: ${value}`
     )
