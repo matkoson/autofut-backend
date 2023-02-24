@@ -2,7 +2,7 @@
 Backend part of [AutoFut](https://github.com/matkoson/autofut-extension).
 
 ### What it does
-- runs a locat NodeJS server, which accepts synchronization requests from [AutoFut Chrome Extension](https://github.com/matkoson/autofut-extension), to create a database of owned players.
+- runs a local NodeJS server, accepting synchronization requests from [AutoFut Chrome Extension](https://github.com/matkoson/autofut-extension), to create a database of owned players.
 - runs a [web scrapper cluster](https://github.com/thomasdondorf/puppeteer-cluster) to search for the latest player prices
 - passes the extracted HTML to [parser](https://github.com/matkoson/matkoson-parser) for data extraction
 - saves the club summary received from the [extension](https://github.com/matkoson/autofut-extension), to be able to update the prices on-demand(`yarn price:update`) and in scheduled intervals(`yarn price:update:interval`)
