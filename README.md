@@ -1,5 +1,5 @@
 # AutoFut Backend
-Backend part of [AutoFut Extension](https://github.com/matkoson/autofut-extension).
+Backend part of [AutoFut](https://github.com/matkoson/autofut-extension).
 
 ### What it does
 - runs a locat NodeJS server, which accepts synchronization requests from [AutoFut Chrome Extension](https://github.com/matkoson/autofut-extension), to create a database of owned players.
