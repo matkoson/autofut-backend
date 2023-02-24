@@ -9,8 +9,7 @@ Backend part of [AutoFut Extension](https://github.com/matkoson/autofut-extensio
 - generates prices reports, displaying the difference in price in comparison to the cheapest player of the same rating or the same type(combined rarity and quality), to spot potential trading opportunities
 - generates player performance reports, to indicate which players should be used most, based on past performance
 
-Technologies used
-The following technologies are used in this project:
+# Technologies
 
 - Node.js (v16.13.0 or higher)
 - TypeScript
