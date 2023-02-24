@@ -1,4 +1,4 @@
-# autofut-backend
+# AutoFut Backend
 Backend part of [AutoFut Extension](https://github.com/matkoson/autofut-extension).
 
 ### What it does
@@ -16,10 +16,10 @@ The following technologies are used in this project:
 - TypeScript
 - Rollup
 - Puppeteer
-- Hast
+- Puppeteer-Cluster
 - Express
 - Prompts
+- Commander
 - eslint
 - Prettier
-
 
