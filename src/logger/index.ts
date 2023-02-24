@@ -1,10 +1,14 @@
 import pretty from 'pretty'
 
+import { getTimestamp } from '../utils/index.js'
+
 enum LogLevels {
   ERROR = 0,
   INFO = 1,
   DEBUG = 2,
 }
+
+export type LogOptions = 'info' | 'error' | 'debug' | 'success' | 'warn'
 
 const MAX_LOG_LENGTH = 100
 
@@ -47,7 +51,7 @@ class Logger {
       const [seconds] = process.hrtime(this.startTime)
       const elapsedTime = `${seconds}s`
       console.log(
-        `🔎 %cDEBUG (${elapsedTime}): ${this.processMessages(messages)}`,
+        `[🔎 %cDEBUG]: (${elapsedTime}): ${this.processMessages(messages)}`,
         'color: purple; font-size: 20px'
       )
     }
@@ -57,7 +61,7 @@ class Logger {
     const [seconds] = process.hrtime(this.startTime)
     const elapsedTime = `${seconds}s`
     console.log(
-      `🛑 %cERR (${elapsedTime}): ${this.processMessages(messages)}`,
+      `[🛑 %cERR]: (${elapsedTime}): ${this.processMessages(messages)}`,
       'color: red; font-size: 20px'
     )
     messages.forEach((message) => {
@@ -73,7 +77,7 @@ class Logger {
       const [seconds] = process.hrtime(this.startTime)
       const elapsedTime = `${seconds}s`
       console.info(
-        `ℹ️  %cINFO (${elapsedTime}): ${this.processMessages(messages)}`,
+        `[ℹ️  %cINFO]: (${elapsedTime}): ${this.processMessages(messages)}`,
         'color: blue; font-size: 20px'
       )
     }
@@ -83,7 +87,7 @@ class Logger {
     const [seconds] = process.hrtime(this.startTime)
     const elapsedTime = `${seconds}s`
     console.log(
-      `✅ %cOK (${elapsedTime}): ${this.processMessages(messages)}`,
+      `[✅ %cOK  ]: (${elapsedTime}): ${this.processMessages(messages)}`,
       'font-weight: bold; color: green; font-size: 20px'
     )
   }
@@ -91,16 +95,38 @@ class Logger {
     const [seconds] = process.hrtime(this.startTime)
     const elapsedTime = `${seconds}s`
     console.warn(
-      `⚠️  %cWARN (${elapsedTime}): ${this.processMessages(messages)}`,
+      `[⚠️  %cWARN] (${elapsedTime}): ${this.processMessages(messages)}`,
       'color: orange; font-size: 20px'
     )
   }
   static logHtml = (html: string) => {
     console.log(pretty(html))
   }
-
-  getMethods() {
-    return Object.getOwnPropertyNames(Logger.prototype)
+  static logWithTimestamp = (
+    option: LogOptions,
+    title: string,
+    message: string
+  ) => {
+    const logTitle = `[🕖 ${getTimestamp()} 🕝]: ${title}\n`
+    switch (option) {
+      case 'info':
+        Logger.logInfo(`${logTitle}> ${message}`)
+        break
+      case 'error':
+        Logger.logError(`${logTitle}> ${message}`)
+        break
+      case 'debug':
+        Logger.logDebug(`${logTitle}> ${message}`)
+        break
+      case 'success':
+        Logger.logSuccess(`${logTitle}> ${message}`)
+        break
+      case 'warn':
+        Logger.logWarn(`${logTitle}> ${message}`)
+        break
+      default:
+        throw new Error('[📣 LOGGER 📣]: 🔴🔴🔴 Invalid log option!')
+    }
   }
 }
 

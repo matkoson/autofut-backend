@@ -12,8 +12,9 @@ dist
 src/data/clubReport/
 src/data/clubSummary/
 src/data/err/
-src/data/price/
+src/data/rawPrice/
 src/data/rawClubSummary/
+src/data/futWebClubSummary/
 src/data/screenshots/
 src/data/static/
 debug

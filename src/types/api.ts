@@ -1,6 +1,6 @@
-import { SearchResultsRowStats } from '../scrapper/Futbin/types.js'
+import { FutbinStats } from '../Scrapper/FutbinParser/types.js'
 
-export type RawClubSummaryItem = {
+export type FutWebClubSummaryItem = {
   assetId: number
   /* Assists for my club. */
   assists: number
@@ -128,7 +128,7 @@ export type ClubPlayer = {
   id: string
   identity: PlayerIdentity
   isUntradeable: boolean
-  futbin: SearchResultsRowStats
+  futbin: FutbinStats
   details: Omit<UnknownClubPlayer, 'isUntradeable'>
 }
 
@@ -166,12 +166,12 @@ export type ClubPlayer = {
 }
 */
 
-export type RawClubSummary = {
-  itemData: RawClubSummaryItem[]
+export type FutWebClubSummary = {
+  itemData: FutWebClubSummaryItem[]
 }
 
 export type ClubPlayerList = {
-  [key: string]: Omit<RawClubSummaryItem, 'assetId'>
+  [key: string]: Omit<FutWebClubSummaryItem, 'assetId'>
 }
 
 export type ClubSummary = {

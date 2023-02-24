@@ -2,30 +2,34 @@ import fs from 'fs'
 import path from 'path'
 
 const root = process.cwd()
-export const getLatestRawClubSummaryFilename = () => {
-  const latestRawClubSummaryDirPath = './src/data/rawClubSummary/latest'
-  const latestRawClubSummaryDir = path.resolve(
+export const getLatestFutWebClubSummaryFilename = () => {
+  const latestFutWebClubSummaryDirPath = './src/data/futWebClubSummary/latest'
+  const latestFutWebClubSummaryDir = path.resolve(
     root,
-    latestRawClubSummaryDirPath
+    latestFutWebClubSummaryDirPath
   )
-  const latestRawClubSummaryFile = fs.readdirSync(latestRawClubSummaryDir)[0]
+  const latestFutWebClubSummaryFile = fs.readdirSync(
+    latestFutWebClubSummaryDir
+  )[0]
 
-  return path.resolve(latestRawClubSummaryDir, latestRawClubSummaryFile)
+  return path.resolve(latestFutWebClubSummaryDir, latestFutWebClubSummaryFile)
 }
 
-export const getArchiveRawClubSummaryFilenames = () => {
-  const archiveRawClubSummaryDirPath = './src/data/rawClubSummary/archive'
-  const archiveRawClubSummaryDir = path.resolve(
+export const getArchivedFutWebClubSummaryFilenames = () => {
+  const archiveFutWebClubSummaryDirPath = './src/data/futWebClubSummary/archive'
+  const archiveFutWebClubSummaryDir = path.resolve(
     root,
-    archiveRawClubSummaryDirPath
+    archiveFutWebClubSummaryDirPath
   )
-  const archiveRawClubSummaryFiles = fs.readdirSync(archiveRawClubSummaryDir)
+  const archiveFutWebClubSummaryFiles = fs.readdirSync(
+    archiveFutWebClubSummaryDir
+  )
 
-  return archiveRawClubSummaryFiles.map((file: string) => {
+  return archiveFutWebClubSummaryFiles.map((file: string) => {
     return {
       title: file,
-      value: path.resolve(archiveRawClubSummaryDir, file),
-      description: `Archived 'rawClubSummary' file`,
+      value: path.resolve(archiveFutWebClubSummaryDir, file),
+      description: `Archived 'futWebClubSummary' file`,
     }
   })
 }

@@ -24,9 +24,9 @@ const runAutofutBackend = () => {
     '/sync_club',
     async (req: express.Request, res: express.Response) => {
       logInfo("Received request: POST: '/sync_club'")
-      const { rawClubSummary, dis } = req.body || {}
+      const { rawClubSummary: futWebSummary, dis } = req.body || {}
 
-      if (!rawClubSummary || !dis) {
+      if (!futWebSummary || !dis) {
         logInfo('/sync_club', 'Missing parameters: `rawClubSummary`, `dis`')
         res.status(400).json({
           error: 'Missing parameters: `rawClubSummary`, `dis`',
@@ -37,7 +37,7 @@ const runAutofutBackend = () => {
       const startTime = performance.now()
 
       try {
-        const club = new Club(rawClubSummary)
+        const club = new Club(futWebSummary)
         const clubReport = await club.makeClubReport(startTime)
 
         logSuccess(
@@ -51,6 +51,8 @@ const runAutofutBackend = () => {
       } catch (err) {
         logError('RES: /sync_club: returning error: ', err)
         const duration = getDuration(startTime, performance.now())
+        logInfo(`[⏱  DURATION]: 'RES' took: ${duration}`)
+
         res.status(500).json({
           duration,
           clubReport: null,

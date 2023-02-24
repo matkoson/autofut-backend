@@ -18,7 +18,7 @@ export const getDuration = (startTime, endTime) => {
 }
 
 
-async function dp() {
+async function debug() {
   const startTime = performance.now()
 
   const currentUrl = new URL(import.meta.url);
@@ -36,9 +36,19 @@ async function dp() {
 
   console.log(`[▼  VERSION]: '@matkoson/parser': v.${matkosonParserVersion}`);
 
-  const firstName = 'Nicolo'
-  const lastName = 'Barella'
-  const rating = '89'
+  // ########################################
+
+  // const firstName = 'Sergio'
+  // const lastName = 'Busquets Burgos'
+  // const rating = '85'
+
+  // ########################################
+
+  const firstName = 'Paolo'
+  const lastName = 'Maldini'
+  const rating = '88'
+
+  // ########################################
 
 
   const futbinStats = await backend.cli.debugPage(firstName, lastName, rating)
@@ -51,5 +61,5 @@ async function dp() {
   console.log(JSON.stringify(futbinStats, null, 2))
 }
 
-await dp();
+await debug();
 

@@ -1,32 +1,49 @@
 import saveData from '../data/clubReport/utils/saveData.js'
 import {
   ClubSummary,
-  RawClubSummaryItem,
+  FutWebClubSummaryItem,
   UnknownClubPlayerList,
   UnknownClubPlayerMap,
 } from '../types/index.js'
+import Logger from '../logger/index.js'
 
-interface HandleClubSummary {
-  (rawClubSummary: string, save?: boolean): ClubSummary
+interface HandleFutWebClubSummary {
+  (futWebClubSummary: string, save?: boolean): ClubSummary
 }
-export const handleClubSummary: HandleClubSummary = (
-  rawClubSummary,
-  save = true
+export const handleFutWebAppClubSummary: HandleFutWebClubSummary = (
+  futWebClubSummary,
+  save = false
 ) => {
-  if (save) {
-    saveData({ type: 'rawClubSummary', data: rawClubSummary })
-  }
-
   const map: UnknownClubPlayerMap = {}
   const list: UnknownClubPlayerList = []
-  const clubSummaryJson = JSON.parse(rawClubSummary)
+  const clubSummaryJson = JSON.parse(futWebClubSummary)
+  if (save) {
+    /* TODO: find better solution! */
+    /* Hack, I don't want it stringified more than once. */
+    try {
+      saveData({ type: 'futWebClubSummary', data: clubSummaryJson })
+      Logger.logWithTimestamp(
+        'info',
+        `[💾 SAVE FUT WEB CLUB SUMMARY  🟢]:`,
+        `\n`
+      )
+    } catch (error) {
+      Logger.logWithTimestamp(
+        'error',
+        `[💾 SAVE FUT WEB CLUB SUMMARY  🔴]:`,
+        `\n`
+      )
+
+      throw error
+    }
+  }
   /* 'itemData' is some redundant object property in which EA hides player info. */
   const clubSummaryItemData = clubSummaryJson.itemData
   if (!clubSummaryItemData) {
     throw new Error('No club summary item data found!')
   }
 
-  clubSummaryItemData.forEach((itemData: RawClubSummaryItem) => {
+  clubSummaryItemData.forEach((itemData: FutWebClubSummaryItem) => {
     const clubPlayerDetails = itemData
 
     const id = String(clubPlayerDetails.assetId)
@@ -98,7 +115,22 @@ export const handleClubSummary: HandleClubSummary = (
   })
 
   if (save) {
-    saveData({ type: 'clubSummary', data: { map, list } })
+    try {
+      saveData({ type: 'clubSummary', data: { map, list } })
+      Logger.logWithTimestamp(
+        'info',
+        `[💾 SAVE PROCESSED CLUB SUMMARY  🟢]:`,
+        `\n`
+      )
+    } catch (error) {
+      Logger.logWithTimestamp(
+        'error',
+        `[💾 SAVE PROCESSED CLUB SUMMARY  🔴]:`,
+        `\n`
+      )
+
+      throw error
+    }
   }
 
   return { map, list }

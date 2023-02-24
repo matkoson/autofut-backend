@@ -1,14 +1,17 @@
-import Scrapper, { shallowClusterConfig } from '../scrapper/index.js'
 import { getEstimatedTimeToCompletion } from '../utils/getEstimatedTimeToCompletion.js'
-import { validateFutbinSearchResultsRowStats } from '../utils/validate/validateFutbinSearchResultsRowStats.js'
-import { SearchResultsRowStats } from '../scrapper/Futbin/types.js'
+import { validateFutbinStats } from '../utils/validate/validateFutbinStats.js'
 import { getDuration } from '../utils/index.js'
 import { ClubPlayer, ClubSummary } from '../types/index.js'
 import Logger from '../logger/index.js'
+import Scrapper, { shallowClusterConfig } from '../Scrapper/index.js'
+import { FutbinStats } from '../Scrapper/FutbinParser/types.js'
+import { validateString } from '../utils/validate/index.js'
+import { saveReport } from '../data/clubReport/utils/saveData.js'
 
 import prepareReport from './prepareReport.js'
 import findPlayers from './findPlayers.js'
-import { handleClubSummary } from './handleClubSummary.js'
+import { handleFutWebAppClubSummary } from './handleFutWebAppClubSummary.js'
+import saveFutbinPrice from './saveFutbinPrice.js'
 
 const { logInfo, logWarn } = Logger
 
@@ -21,7 +24,8 @@ class Club {
   tradeableClubPlayers: { [key: string]: ClubPlayer } = {}
   untradeableClubPlayers: { [key: string]: ClubPlayer } = {}
   /* Lists */
-  playerList: ClubPlayer[] = []
+  clubPlayersMap: { [key: string]: ClubPlayer } = {}
+  clubPlayerList: ClubPlayer[] = []
   tradeableList: ClubPlayer[] = []
   untradeableList: ClubPlayer[] = []
   finalPlayerListToProcess: ClubPlayer[] = []
@@ -32,14 +36,14 @@ class Club {
   /* Processing data */
   processedCount = 0
 
-  constructor(rawClubSummary: string) {
-    this.clubSummary = handleClubSummary(rawClubSummary)
+  constructor(futWebAppClubSummary: string) {
+    this.clubSummary = handleFutWebAppClubSummary(futWebAppClubSummary, true)
     logInfo(`[👬 NUM OF PLAYERS]: ${this.clubSummary.list.length}`)
   }
 
   private initScrapper = async () => {
     logInfo('[🏴‍ SCRAPPER] Initializing...')
-    this.scrapper = await new Scrapper()
+    this.scrapper = new Scrapper()
     await this.scrapper.init()
   }
 
@@ -49,8 +53,8 @@ class Club {
         return {
           untradeableCount: this.untradeableList.length,
           tradeableCount: this.tradeableList.length,
-          playerCount: this.playerList.length,
-          playerList: this.playerList,
+          playerCount: this.clubPlayerList.length,
+          playerList: this.clubPlayerList,
         }
       },
       updateClubPlayer: (
@@ -64,8 +68,8 @@ class Club {
           return
         }
 
-        this.clubPlayers[id] = clubPlayer
-        this.playerList.push(clubPlayer)
+        this.clubPlayersMap[id] = clubPlayer
+        this.clubPlayerList.push(clubPlayer)
         if (isUntradeable) {
           this.untradeableClubPlayers[id] = clubPlayer
           this.untradeableList.push(clubPlayer)
@@ -82,13 +86,19 @@ class Club {
       throw new Error('Scrapper not initialized')
     }
 
-    console.log('[👯‍ LIST TO PROCESS]: ', this.finalPlayerListToProcess.length)
+    Logger.logWithTimestamp(
+      'info',
+      '[👯‍ LIST TO PROCESS 👯‍]:',
+      `NUMBER OF CLUB PLAYERS: ${this.finalPlayerListToProcess.length}`
+    )
     const handleScrapperResponse = (
       id: string,
-      futbinStats: SearchResultsRowStats
+      playerName: string,
+      rating: string,
+      futbinStats: FutbinStats
     ) => {
       this.updateCount()
-      this.updateClubPlayerFutbinStats(id, futbinStats)
+      this.updateClubPlayerFutbinStats(id, playerName, rating, futbinStats)
     }
 
     if (!this.finalPlayerListToProcess.length) {
@@ -104,24 +114,46 @@ class Club {
       stats: {
         untradeableCount: this.untradeableList.length,
         tradeableCount: this.tradeableList.length,
-        playerCount: this.playerList.length,
+        playerCount: this.clubPlayerList.length,
       },
-      playerList: this.playerList,
-      tradeableList: this.tradeableList,
-      untradeableList: this.untradeableList,
-      futbinPriceNotUpdated: this.futbinStatsNotUpdated,
-      unknownIds: this.unknownPlayerIds,
+      clubPlayersMap: this.clubPlayersMap,
+      clubPlayersList: Object.values(this.clubPlayersMap),
+      error: {
+        futbinPriceNotUpdated: this.futbinStatsNotUpdated,
+        unknownIds: this.unknownPlayerIds,
+      },
     }
   }
 
   private updateClubPlayerFutbinStats = (
     id: string,
-    update: SearchResultsRowStats
+    playerName: string,
+    rating: string,
+    update: FutbinStats
   ) => {
     try {
-      validateFutbinSearchResultsRowStats(update)
-      const clubPlayer = this.clubPlayers[id]
+      const clubPlayer = this.clubPlayersMap[id]
       clubPlayer.futbin = update
+      const { isUntradeable } = clubPlayer
+      const { price, quality, rarity } = clubPlayer.futbin
+      validateString(price, 'clubPlayer.futbin.price')
+
+      Logger.logWithTimestamp(
+        'success',
+        `[🎯 PRICE FOUND 🎯]:`,
+        `[💰 '${clubPlayer.futbin.price}' FUT COINS 💰], player: (⚽️ '${playerName}' ⚽️), rating: (💯 '${rating}' 💯)`
+      )
+
+      saveFutbinPrice(
+        playerName,
+        rating,
+        String(isUntradeable),
+        quality,
+        rarity,
+        price
+      )
+
+      validateFutbinStats(update)
     } catch (error) {
       this.futbinStatsNotUpdated.push([id, (error as Error).message])
     }
@@ -175,14 +207,18 @@ class Club {
 
     /* ##### SLICE HERE IF NECESSARY, TO NOT FUCK UP ETA  ##### */
     // logWarn(`[🟡 WARN] Number of players sliced for development purposes!`)
-    this.finalPlayerListToProcess = playerList.slice(0, 10)
+    logWarn(`[🟡 WARN]: WORKING ONLY ON TRADEABLE LIST!`)
+    this.finalPlayerListToProcess = this.tradeableList
     /* ##### SLICE HERE IF NECESSARY, TO NOT FUCK UP ETA  ##### */
 
     const futbinSearchResultsStats = await this.scrapFutbinPlayers()
 
     const duration = getDuration(startTime, performance.now())
+    logInfo(`[⏱  DURATION]: 'makeClubReport' took: ${duration}`)
 
     const clubReport = prepareReport(futbinSearchResultsStats, duration)
+
+    saveReport(clubReport)
 
     return clubReport
   }

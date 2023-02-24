@@ -4,7 +4,6 @@ const root = process.cwd()
 
 const handlePrompts = (response: { [key: string]: string }) => {
   const { command } = response
-  console.log('command', command)
   switch (command) {
     case 'makeClubReport':
       const command = `ts-node -P ${root}/cli/src/runMakeClubReport.ts ${response.club}`
