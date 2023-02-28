@@ -15,12 +15,13 @@ import {
   FutbinInfoTableData,
   FutbinInnerStatsData,
   FutbinPriceBoxData,
-  FutbinStats,
+  FutbinPlayer,
 } from './types.js'
 import findPlayerQualityAndRarity from './findPlayerQualityAndRarity.js'
 import findPlayerFutbinUrl from './findPlayerFutbinUrl.js'
 
-const TAG = '[🖖 PARSER  🖖]:'
+const TAG = '[‍☠️ FUTBIN_SCRAPPER 🏐]:'
+const logger = new Logger(TAG)
 
 interface FutbinError {
   message: string
@@ -28,7 +29,7 @@ interface FutbinError {
   stack: Error['stack']
 }
 
-class FutbinScrapper {
+class Futbin {
   playerName: string
   rating: string
   page: Puppeteer.Page
@@ -42,7 +43,8 @@ class FutbinScrapper {
 
   infoTableData: FutbinInfoTableData | null = null
   playerDetailsPageUrl: string | null = null
-  futbinStats: FutbinStats = defaultFutbinStatsData
+  currentPageLocation: string | null = null
+  futbinStats: FutbinPlayer = defaultFutbinStatsData
 
   constructor(
     playerName: string,
@@ -54,6 +56,8 @@ class FutbinScrapper {
     this.rating = rating
     this.page = page
     this.searchResultsUrl = url
+
+    return this
   }
 
   private createExtractorError = (error: FutbinError) => {
@@ -69,6 +73,8 @@ class FutbinScrapper {
 
     try {
       await this.page.goto(this.searchResultsUrl)
+      this.currentPageLocation = this.searchResultsUrl
+
       await this.page.waitForFunction(() => {
         return document.readyState === 'complete'
       })
@@ -78,15 +84,15 @@ class FutbinScrapper {
         this.page,
         'searchResultsPage'
       )
-      Logger.logWithTimestamp(
-        'info',
-        `${TAG} [🤾‍♀️ SEARCH_RESULTS_PAGE_LOADED 🕸 ]:`,
+      logger.logDebug(
+        '[LOAD_SEARCH_RESULTS_PAGE]:',
         `player: (${this.playerName})(${this.rating})\n url: ${this.searchResultsUrl}`
       )
     } catch (err) {
-      Logger.logWithTimestamp('error', TAG, (err as Error).message)
+      logger.logError('[LOAD_SEARCH_RESULTS_PAGE]:', err as Error)
     }
   }
+
   loadPlayerDetailsPage = async (): Promise<void> => {
     if (!this.playerDetailsPageUrl) {
       throw new Error('Player futbin url is not set!')
@@ -94,26 +100,28 @@ class FutbinScrapper {
 
     try {
       await this.page.goto(this.playerDetailsPageUrl)
+      this.currentPageLocation = this.playerDetailsPageUrl
+
       await this.page.waitForFunction(() => {
         return document.readyState === 'complete'
       })
+
       await saveElement(
         this.playerName,
         this.rating,
         this.page,
         'playerDetailsPage'
       )
-      Logger.logWithTimestamp(
-        'info',
-        `${TAG} [🤾‍ PLAYER DETAILS PAGE LOADED 🕸 ]:`,
+      logger.logDebug(
+        `[🤾‍ PLAYER_DETAILS_PAGE LOADED 🕸 ]:`,
         `player: (${this.playerName})(${this.rating}), url: ${this.playerDetailsPageUrl}`
       )
-    } catch (err) {
-      Logger.logWithTimestamp('error', TAG, `🔴🔴🔴 ${(err as Error).message}`)
+    } catch (error) {
+      logger.logError('[LOAD_PLAYER_DETAILS_PAGE]:', error as Error)
     }
   }
 
-  scrapInfoElements = async () => {
+  private scrapInfoElements = async () => {
     if (!this.page) {
       throw new Error(
         "Puppeteer was not properly initialized! Run '.init()' first!"
@@ -131,12 +139,12 @@ class FutbinScrapper {
 
     const { rarity, quality } = await findPlayerQualityAndRarity(
       this.playerName,
+      this.rating,
       this.page
     )
 
-    Logger.logWithTimestamp(
-      'info',
-      `${TAG} [⚱️ FIND_QUALITY_AND_RARITY ⚱️]:`,
+    logger.logDebug(
+      `[⚱️ FIND_QUALITY_AND_RARITY ⚱️]:`,
       `player: ${this.playerName}, found rarity: ${rarity}, quality: ${quality}`
     )
     this.futbinStats.rarity = rarity
@@ -187,10 +195,9 @@ class FutbinScrapper {
     return this.priceBoxParser.getDebugTextStructure()
   }
   debugFutbinStats = () => {
-    Logger.logWithTimestamp(
-      'info',
-      `[🥷 SCRAPPING 🥷]:`,
-      `Getting text structure...`
+    logger.logInfo(
+      TAG,
+      `Getting text structure for player: ${this.playerName}...`
     )
     const textStructure = this.getTextStructure()
     try {
@@ -198,8 +205,7 @@ class FutbinScrapper {
       // @ts-ignore
       const parsedTextStructure = JSON.parse(textStructure)
 
-      Logger.logWithTimestamp(
-        'info',
+      logger.logDebug(
         `[🔬 DEBUG_FUTBIN_STATS 🔬]:`,
         JSON.stringify(parsedTextStructure?.structure?.texts, null, 2)
       )
@@ -218,14 +224,14 @@ class FutbinScrapper {
     return html
   }
 
-  extract = async (): Promise<FutbinStats> => {
-    const TAG = '[🥷  SCRAPPING  🥷]:'
+  getPlayer = async (): Promise<FutbinPlayer> => {
+    const TAG = '[🥷  EXTRACTING  🥷]:'
     const infoElements = await this.scrapInfoElements()
     const { priceBoxElement, infoTableElement, statsInnerTableElement } =
       infoElements
 
     const playerIdentity = `⚽️ '(${this.playerName}' ⚽️)(💯 '${this.rating}' 💯)`
-    Logger.logWithTimestamp('info', TAG, `${playerIdentity}...`)
+    logger.logDebug(TAG, `${playerIdentity}...`)
     const priceBoxHtml = await this.getHtmlFromElement(priceBoxElement)
     const infoTableHtml = await this.getHtmlFromElement(infoTableElement)
     const statsInnerTableHtml = await this.getHtmlFromElement(
@@ -267,15 +273,15 @@ class FutbinScrapper {
 
       return this.futbinStats
     } catch (err) {
-      this.debugFutbinStats()
       console.error({
         message: `[UNEXPECTED_ERROR]: ${(err as Error).message}`,
         stack: (err as Error).stack,
         line: getErrorLocation(),
       })
+      this.debugFutbinStats()
       throw err
     }
   }
 }
 
-export default FutbinScrapper
+export default Futbin

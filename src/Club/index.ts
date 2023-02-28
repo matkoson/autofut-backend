@@ -1,10 +1,13 @@
+import path from 'path'
+import fs from 'fs'
+
 import { getEstimatedTimeToCompletion } from '../utils/getEstimatedTimeToCompletion.js'
 import { validateFutbinStats } from '../utils/validate/validateFutbinStats.js'
 import { getDuration } from '../utils/index.js'
 import { ClubPlayer, ClubSummary } from '../types/index.js'
 import Logger from '../logger/index.js'
 import Scrapper, { shallowClusterConfig } from '../Scrapper/index.js'
-import { FutbinStats } from '../Scrapper/FutbinParser/types.js'
+import { FutbinPlayer } from '../Scrapper/Futbin/types.js'
 import { validateString } from '../utils/validate/index.js'
 import { saveReport } from '../data/clubReport/utils/saveData.js'
 
@@ -13,14 +16,14 @@ import findPlayers from './findPlayers.js'
 import { handleFutWebAppClubSummary } from './handleFutWebAppClubSummary.js'
 import saveFutbinPrice from './saveFutbinPrice.js'
 
-const { logInfo, logWarn } = Logger
+const TAG = '[♣  CLUB  ♣]:'
+const logger = new Logger(TAG)
 
 class Club {
   scrapper: Scrapper | null = null
   clubSummary: ClubSummary
   /* Players */
   /* Hash-maps */
-  clubPlayers: { [key: string]: ClubPlayer } = {}
   tradeableClubPlayers: { [key: string]: ClubPlayer } = {}
   untradeableClubPlayers: { [key: string]: ClubPlayer } = {}
   /* Lists */
@@ -28,7 +31,7 @@ class Club {
   clubPlayerList: ClubPlayer[] = []
   tradeableList: ClubPlayer[] = []
   untradeableList: ClubPlayer[] = []
-  finalPlayerListToProcess: ClubPlayer[] = []
+  playerListToProcess: ClubPlayer[] = []
   /* Error lists */
   unknownPlayerIds: string[] = []
   futbinStatsNotUpdated: [string, string][] = []
@@ -38,11 +41,11 @@ class Club {
 
   constructor(futWebAppClubSummary: string) {
     this.clubSummary = handleFutWebAppClubSummary(futWebAppClubSummary, true)
-    logInfo(`[👬 NUM OF PLAYERS]: ${this.clubSummary.list.length}`)
+    logger.logInfo(`[👬 NUM OF PLAYERS]:`, `${this.clubSummary.list.length}`)
   }
 
   private initScrapper = async () => {
-    logInfo('[🏴‍ SCRAPPER] Initializing...')
+    logger.logInfo(`[🏴‍☠️ SCRAPPER  🏴‍☠️]:`, `Initializing...`)
     this.scrapper = new Scrapper()
     await this.scrapper.init()
   }
@@ -63,7 +66,10 @@ class Club {
         clubPlayer: ClubPlayer | null
       ) => {
         if (!clubPlayer) {
-          logWarn(`[🤔 PLAYER NOT FOUND]: id: player with '${id}' not found.`)
+          logger.logWarn(
+            `[🤔 PLAYER NOT FOUND]:`,
+            `id: player with '${id}' not found.`
+          )
           this.unknownPlayerIds.push(id)
           return
         }
@@ -80,35 +86,103 @@ class Club {
       },
     }
   }
+  private backUpPrices = () => {
+    const pricesDirPath = path.join(process.cwd(), 'src', 'data', 'price')
+    const priceFiles = fs.readdirSync(pricesDirPath)
 
-  private scrapFutbinPlayers = async () => {
+    const analysisPricesDirPath = path.join(
+      process.cwd(),
+      'src',
+      'data',
+      'analysis',
+      'priceReport',
+      'prices'
+    )
+
+    if (!fs.existsSync(analysisPricesDirPath)) {
+      fs.mkdirSync(analysisPricesDirPath)
+    } else {
+      const files = fs.readdirSync(analysisPricesDirPath)
+      files.forEach((file) => {
+        fs.rmSync(path.join(analysisPricesDirPath, file), {
+          recursive: true,
+        })
+      })
+    }
+
+    priceFiles.forEach((file) => {
+      fs.copyFileSync(
+        path.join(pricesDirPath, file),
+        path.join(analysisPricesDirPath, file)
+      )
+    })
+  }
+
+  private removeOldPrices = () => {
+    const pricesDirPath = path.join(process.cwd(), 'src', 'data', 'price')
+    const files = fs.readdirSync(pricesDirPath)
+    try {
+      logger.logInfo(
+        `[🗑️ REMOVING OLD PRICE 💰]:[🔐 BACKING UP 🔐]:`,
+        `Backing up prices before updating...`
+      )
+      this.backUpPrices()
+      files.forEach((file) => {
+        logger.logDebug(
+          `[🗑️ REMOVING OLD PRICE 💰]:`,
+          `Removing old price file: ${file}`
+        )
+
+        fs.rmSync(path.join(pricesDirPath, file))
+      })
+      logger.logSuccess(
+        `[🗑️ REMOVING OLD PRICE 💰]:`,
+        '\n\n✅ Removed old price files! ✅\n\n'
+      )
+    } catch (error) {
+      logger.logError(
+        `[🤯 ERROR]:`,
+        error as Error,
+        `Error while removing old prices!`
+      )
+    }
+  }
+
+  private scrapFutbin = async () => {
     if (!this.scrapper) {
       throw new Error('Scrapper not initialized')
     }
 
-    Logger.logWithTimestamp(
-      'info',
+    logger.logInfo(
       '[👯‍ LIST TO PROCESS 👯‍]:',
-      `NUMBER OF CLUB PLAYERS: ${this.finalPlayerListToProcess.length}`
+      `\n\n NUMBER OF CLUB PLAYERS: ${this.playerListToProcess.length} \n\n`
     )
-    const handleScrapperResponse = (
+    const handleFutbinPlayer = (
       id: string,
       playerName: string,
       rating: string,
-      futbinStats: FutbinStats
+      futbinPlayer: FutbinPlayer
     ) => {
       this.updateCount()
-      this.updateClubPlayerFutbinStats(id, playerName, rating, futbinStats)
+      this.updateClubPlayer(id, playerName, rating, futbinPlayer)
     }
 
-    if (!this.finalPlayerListToProcess.length) {
+    if (!this.playerListToProcess.length) {
       throw new Error('"finalPlayerListToProcess" not set!')
     }
 
-    await this.scrapper.scrapFutbinPlayers(
-      this.finalPlayerListToProcess,
-      handleScrapperResponse
+    this.removeOldPrices()
+
+    await this.scrapper.scrapFutbinPlayerList(
+      this.playerListToProcess,
+      handleFutbinPlayer
     )
+
+    logger.logInfo(
+      `[🗑️ REMOVING OLD PRICE 💰]:[🔐 BACKING UP 🔐]:`,
+      `Backing up prices after success...`
+    )
+    this.backUpPrices()
 
     return {
       stats: {
@@ -125,21 +199,26 @@ class Club {
     }
   }
 
-  private updateClubPlayerFutbinStats = (
+  private updateClubPlayer = (
     id: string,
     playerName: string,
     rating: string,
-    update: FutbinStats
+    futbinPlayer: FutbinPlayer
   ) => {
     try {
       const clubPlayer = this.clubPlayersMap[id]
-      clubPlayer.futbin = update
+      clubPlayer.futbin = futbinPlayer
       const { isUntradeable } = clubPlayer
-      const { price, quality, rarity } = clubPlayer.futbin
-      validateString(price, 'clubPlayer.futbin.price')
+      const { price, quality, prevPrices, rarity } = clubPlayer.futbin
+      validateString(playerName, rating, price, 'clubPlayer.futbin.price')
+      validateString(
+        playerName,
+        rating,
+        prevPrices,
+        'clubPlayer.futbin.prevPrices'
+      )
 
-      Logger.logWithTimestamp(
-        'success',
+      logger.logSuccess(
         `[🎯 PRICE FOUND 🎯]:`,
         `[💰 '${clubPlayer.futbin.price}' FUT COINS 💰], player: (⚽️ '${playerName}' ⚽️), rating: (💯 '${rating}' 💯)`
       )
@@ -150,17 +229,18 @@ class Club {
         String(isUntradeable),
         quality,
         rarity,
-        price
+        price,
+        prevPrices
       )
 
-      validateFutbinStats(update)
+      validateFutbinStats(playerName, rating, futbinPlayer)
     } catch (error) {
       this.futbinStatsNotUpdated.push([id, (error as Error).message])
     }
   }
 
   private updateCount = () => {
-    const totalClubPlayersToProcess = this.finalPlayerListToProcess.length
+    const totalClubPlayersToProcess = this.playerListToProcess.length
     this.processedCount += 1
     const progressPercentage =
       (this.processedCount / totalClubPlayersToProcess) * 100
@@ -179,12 +259,14 @@ class Club {
     const etaMinutes = Math.floor(remainingTime / 1000 / 60)
     const etaSeconds = Math.floor((remainingTime / 1000) % 60)
 
-    logInfo(
-      `[⚡︎ PROGRESS]: [${
+    logger.logInfo(
+      TAG,
+      `[⚡️︎ PROGRESS  ⚡️]:[${
         this.processedCount
       }/${totalClubPlayersToProcess}] - ${progressPercentage.toFixed(
         2
-      )}% - ⏳ETA: ${etaMinutes} minutes ${etaSeconds} seconds`
+      )}% - ⏳ETA: ${etaMinutes} minutes ${etaSeconds} seconds`,
+      120
     )
   }
 
@@ -199,24 +281,23 @@ class Club {
       throw new Error('Club summary not initialized')
     }
 
-    const { updateClubPlayer, getTotals } = this.clubUpdater()
+    const { updateClubPlayer } = this.clubUpdater()
 
+    logger.logInfo(`[🔎 SEARCHING FOR PLAYERS]:`, `Searching for players...`)
     findPlayers(this.clubSummary, updateClubPlayer)
 
-    const { playerList } = getTotals()
-
     /* ##### SLICE HERE IF NECESSARY, TO NOT FUCK UP ETA  ##### */
-    // logWarn(`[🟡 WARN] Number of players sliced for development purposes!`)
-    logWarn(`[🟡 WARN]: WORKING ONLY ON TRADEABLE LIST!`)
-    this.finalPlayerListToProcess = this.tradeableList
+    // logger.logWarn(`[🟡 WARN] Number of players sliced for development purposes!`)
+    logger.logWarn(TAG, `WORKING ONLY ON TRADEABLE LIST!`)
+    this.playerListToProcess = this.tradeableList
     /* ##### SLICE HERE IF NECESSARY, TO NOT FUCK UP ETA  ##### */
 
-    const futbinSearchResultsStats = await this.scrapFutbinPlayers()
+    const futbinInfo = await this.scrapFutbin()
 
     const duration = getDuration(startTime, performance.now())
-    logInfo(`[⏱  DURATION]: 'makeClubReport' took: ${duration}`)
+    logger.logInfo(`[⏱  DURATION]:`, `'makeClubReport' took: ${duration}`)
 
-    const clubReport = prepareReport(futbinSearchResultsStats, duration)
+    const clubReport = prepareReport(futbinInfo, duration)
 
     saveReport(clubReport)
 

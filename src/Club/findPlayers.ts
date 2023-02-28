@@ -1,9 +1,10 @@
 import { ClubPlayer, ClubSummary, PlayerIdentity } from '../types/index.js'
-import lookupPlayer from '../data/lookupPlayer.js'
+import { findPlayerById } from '../data/findSinglePlayer.js'
 import Logger from '../logger/index.js'
-import { defaultFutbinStatsData } from '../Scrapper/FutbinParser/default.js'
+import { defaultFutbinStatsData } from '../Scrapper/Futbin/default.js'
 
-const { logSuccess, logInfo, logWarn } = Logger
+const TAG = '[🤔 FIND_PLAYERS 🤔]:'
+const { logInfo, logDebug, logWarn, logSuccess } = new Logger(TAG)
 type UpdateClubPlayer = (
   id: string,
   isUntradeable: boolean | null,
@@ -14,29 +15,39 @@ const findPlayers = (
   unknownClubPlayers: ClubSummary,
   updateClubPlayer: UpdateClubPlayer
 ) => {
-  logInfo('[🤔 FIND PLAYERS]: Finding players...')
+  const failureList: string[] = []
+  logInfo(TAG, 'Finding players...')
   // eslint-disable-next-line max-statements
   unknownClubPlayers.list.forEach((unknownClubPlayer) => {
     const { id } = unknownClubPlayer
-    const playerName = lookupPlayer(id)
+    const identifiedPlayer = findPlayerById(id)
 
-    if (!playerName) {
+    if (!identifiedPlayer) {
+      logWarn(TAG, `Player not found: [🪪  id:'${id}' 🪪]`)
       updateClubPlayer(id, null, null)
+      failureList.push(id)
       return
     }
+    let { firstName, lastName, rating } = identifiedPlayer
+    if (identifiedPlayer.futbin) {
+      const { futbin } = identifiedPlayer
+      firstName = futbin.firstName
+      lastName = futbin.lastName
+      rating = identifiedPlayer.rating
+    }
 
-    const { f: firstName, l: lastName } = playerName
-    logSuccess(
-      `[⚽️ PLAYER FOUND ⚽️]: [🪪  id:'${id}' 🪪]\n> name: 🤹‍ '${firstName} ${lastName}'`
+    logDebug(
+      `[⚽️ PLAYER FOUND ⚽️]:`,
+      `[🪪  id:'${id}' 🪪]\n> name: 🤹‍ '${firstName} ${lastName}'`
     )
 
     const { isUntradeable, ...restOfUnknownPlayer } = unknownClubPlayers.map[id]
 
     const playerIdentity: PlayerIdentity = {
-      firstName: firstName,
-      lastName: lastName,
+      firstName,
+      lastName,
+      rating,
       futbinId: id,
-      rating: String(unknownClubPlayer?.inGameStats?.rating),
     }
 
     const clubPlayer: ClubPlayer = {
@@ -51,6 +62,9 @@ const findPlayers = (
 
     updateClubPlayer(id, isUntradeable, clubPlayer)
   })
+  if (!failureList.length) {
+    logSuccess(TAG, '\n\n✅ All players found! ✅\n\n')
+  }
 }
 
 export default findPlayers

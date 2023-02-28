@@ -50,7 +50,7 @@ export type FutbinInnerStatsData = {
 
 export type FutbinInfoTableData = {
   firstName: string | null
-  alternativePositions: string
+  alternativePositions: string | null
   lastName: string | null
   fullName: string | null
   accelerationType: string | null
@@ -75,7 +75,7 @@ export type FutbinInfoTableData = {
   leagueId: string | null
 }
 
-export type FutbinStats = FutbinPriceBoxData &
+export type FutbinPlayer = FutbinPriceBoxData &
   FutbinInfoTableData &
   FutbinInnerStatsData &
   FutbinOtherStatsData

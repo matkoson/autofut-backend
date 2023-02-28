@@ -1,6 +1,7 @@
 import Logger from '../logger/index.js'
 
-const { logInfo } = Logger
+const TAG = `[🪄  ETTC  🪄]:`
+const logger = new Logger(TAG)
 
 export const getEstimatedTimeToCompletion = (
   sameDomainDelay: number,
@@ -17,7 +18,7 @@ export const getEstimatedTimeToCompletion = (
   /* in min */
   const inMinutes = Math.floor(estimatedTimeToCompletion / 1000 / 60)
 
-  logInfo(`[🪄 ETTC]: ${inMinutes} minutes ${inSeconds} seconds`)
+  logger.logInfo(TAG, `${inMinutes} minutes ${inSeconds} seconds`)
 
   return estimatedTimeToCompletion
 }

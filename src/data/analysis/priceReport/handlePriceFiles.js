@@ -1,13 +1,18 @@
 import fs from 'fs'
+import path from 'path'
 
 import getReportTime from './getReportTimestamp.js'
 import makeLogEntries from './makeLogEntries.js'
-import getPricesDirPath from './getPricesDirPath.js'
 
 const { reportTimestamp, reportDate } = getReportTime()
 
 const handlePriceFiles = (onlyDiff, playerPriceList) => {
-  const pricesDirPath = getPricesDirPath()
+  const priceAnalysisOutputPath = path.join(process.cwd(), 'analysis', 'prices')
+
+  if (!fs.existsSync(priceAnalysisOutputPath)) {
+    fs.mkdirSync(priceAnalysisOutputPath, { recursive: true })
+  }
+
   console.log('[🎼  PRICES REPORT]:\n>logging results!')
 
   console.log('Sorting by price...')
@@ -24,10 +29,15 @@ const handlePriceFiles = (onlyDiff, playerPriceList) => {
   const sortedList = playerPriceList.map((player, index) => {
     return player.price
   })
-  debugger
+
+  const todayPricesDir = path.join(`${priceAnalysisOutputPath}/${reportDate}`)
+
+  if (!fs.existsSync(todayPricesDir)) {
+    fs.mkdirSync(todayPricesDir)
+  }
 
   fs.writeFile(
-    `${pricesDirPath}/${reportDate}/[${reportTimestamp}].txt`,
+    `${todayPricesDir}/[${reportTimestamp}].txt`,
     makeLogEntries(reportTimestamp, playerPriceList, false, onlyDiff),
     (err) => {
       if (err) {
@@ -40,7 +50,9 @@ const handlePriceFiles = (onlyDiff, playerPriceList) => {
     }
   )
 
-  console.log(`[🎼 TRADE REPORT]:\n>Writing ${pricesDirPath}/tradeable.txt`)
+  console.log(
+    `[🎼 TRADE REPORT]:\n>Writing ${priceAnalysisOutputPath}/tradeable.txt`
+  )
   const tradeableEntries = makeLogEntries(
     reportTimestamp,
     playerPriceList,
@@ -55,31 +67,37 @@ const handlePriceFiles = (onlyDiff, playerPriceList) => {
     false
   )
 
-  fs.writeFile(`${pricesDirPath}/tradeable.txt`, tradeableEntries, (err) => {
+  fs.writeFile(
+    `${priceAnalysisOutputPath}/tradeable.txt`,
+    tradeableEntries,
+    (err) => {
+      if (err) {
+        console.error(
+          `🔴🔴🔴 Error writing report to file: ${priceAnalysisOutputPath}`,
+          err
+        )
+        return
+      }
+      console.log(
+        `[🎼  PRICES REPORT]:\n>Report saved at: ${priceAnalysisOutputPath}/tradeable.txt`
+      )
+    }
+  )
+
+  console.log(
+    `[🎼  PRICES REPORT]:\n>Writing ${priceAnalysisOutputPath}/prices.txt`
+  )
+
+  fs.writeFile(`${priceAnalysisOutputPath}/prices.txt`, allEntries, (err) => {
     if (err) {
       console.error(
-        `🔴🔴🔴 Error writing report to file: ${pricesDirPath}`,
+        `🔴🔴🔴 Error writing report to file: ${priceAnalysisOutputPath}`,
         err
       )
       return
     }
     console.log(
-      `[🎼  PRICES REPORT]:\n>Report saved at: ${pricesDirPath}/tradeable.txt`
-    )
-  })
-
-  console.log(`[🎼  PRICES REPORT]:\n>Writing ${pricesDirPath}/prices.txt`)
-
-  fs.writeFile(`${pricesDirPath}/prices.txt`, allEntries, (err) => {
-    if (err) {
-      console.error(
-        `🔴🔴🔴 Error writing report to file: ${pricesDirPath}`,
-        err
-      )
-      return
-    }
-    console.log(
-      `[🎼  PRICES REPORT]:\n>Report saved at: ${pricesDirPath}/prices.txt`
+      `[🎼  PRICES REPORT]:\n>Report saved at: ${priceAnalysisOutputPath}/prices.txt`
     )
   })
 }

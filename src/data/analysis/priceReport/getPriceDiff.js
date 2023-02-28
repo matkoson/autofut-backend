@@ -18,7 +18,6 @@ const getPriceDiff = (priceInfo) => {
     name
   )
 
-
   if (!price) {
     console.log('no price')
   }
@@ -35,10 +34,6 @@ const getPriceDiff = (priceInfo) => {
       : `[RAT:|Δ💰${formatPrice(calcPrice - valueRAT)}|]:`
 
   const log = `${diffToCheapestQRLog}${diffToCheapestRATLog}`
-
-  if (name === 'Karim Bellarabi') {
-    debugger
-  }
 
   return {
     cheapestQRLog,

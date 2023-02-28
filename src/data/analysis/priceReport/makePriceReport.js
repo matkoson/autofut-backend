@@ -1,14 +1,17 @@
 import fs from 'fs'
 import path from 'path'
-import url from 'url'
 
 import handlePriceFiles from './handlePriceFiles.js'
 import getReportTime from './getReportTimestamp.js'
-import getPriceDirPath from './getPricesDirPath.js'
 
+const root = process.cwd()
 const dirPath = path.join(
-  path.dirname(url.fileURLToPath(import.meta.url)),
-  '../../price'
+  root,
+  'src',
+  'data',
+  'analysis',
+  'priceReport',
+  'prices'
 )
 
 const { reportDate, reportTimestamp } = getReportTime()
@@ -21,21 +24,8 @@ const isToday = (path) => {
   return path.includes(today)
 }
 
-const pricesReportsCleanup = () => {
-  const pricesDirPath = getPriceDirPath()
-  const files = fs.readdirSync(pricesDirPath)
-  files.forEach((priceReportFile) => {
-    if (!isToday(priceReportFile)) {
-      fs.rmSync(path.join(pricesDirPath, priceReportFile), { recursive: true })
-    }
-  })
-}
-
-const index = (onlyDiff) => {
+const makePriceReport = (onlyDiff) => {
   try {
-    console.log(`[🎼  PRICES REPORT]: Cleaning up old price reports...`)
-    pricesReportsCleanup()
-
     console.log(`[🎼  PRICES REPORT]:\n>Reading files from: ${dirPath}`)
     const files = fs.readdirSync(dirPath)
     console.log(`[🎼  PRICES REPORT]:\n>Files found: ${files.length}`)
@@ -59,6 +49,7 @@ const index = (onlyDiff) => {
             rarity,
             isUntradeable,
             price,
+            prevPrices,
             name,
           } = futbin[0]
           playerPriceList.push({
@@ -68,6 +59,7 @@ const index = (onlyDiff) => {
             rarity,
             isUntradeable,
             price,
+            prevPrices,
             name,
           })
         }
@@ -82,4 +74,4 @@ const index = (onlyDiff) => {
   }
 }
 
-export default index
+export default makePriceReport

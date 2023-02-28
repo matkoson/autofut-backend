@@ -1,4 +1,4 @@
-import { FutbinOtherStatsData, FutbinStats } from './types.js'
+import { FutbinOtherStatsData, FutbinPlayer } from './types.js'
 import { defaultPriceBoxData } from './PriceBox/default.js'
 import { defaultInfoTableData } from './InfoTable/default.js'
 import { defaultInnerStatsData } from './InnerStats/default.js'
@@ -9,7 +9,7 @@ const defaultOtherFutbinStatsData: FutbinOtherStatsData = {
   rarity: null,
 }
 
-export const defaultFutbinStatsData: FutbinStats = {
+export const defaultFutbinStatsData: FutbinPlayer = {
   ...defaultOtherFutbinStatsData,
   ...defaultPriceBoxData,
   ...defaultInfoTableData,

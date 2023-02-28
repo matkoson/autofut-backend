@@ -4,7 +4,7 @@
     "./rollup.config.mjs"
   ],
   "exclude": [
-    "./src/debug.js"
+    "./src/cli/debug.js"
   ],
   "compilerOptions": {
     "resolveJsonModule": true,

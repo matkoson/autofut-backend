@@ -7,6 +7,9 @@ import {
 } from '../types/index.js'
 import Logger from '../logger/index.js'
 
+const TAG = '[📩 FUT WEB APP CLUB SUMMARY 📩]:'
+const { logInfo, logError, logSuccess } = new Logger(TAG)
+
 interface HandleFutWebClubSummary {
   (futWebClubSummary: string, save?: boolean): ClubSummary
 }
@@ -21,18 +24,17 @@ export const handleFutWebAppClubSummary: HandleFutWebClubSummary = (
     /* TODO: find better solution! */
     /* Hack, I don't want it stringified more than once. */
     try {
-      saveData({ type: 'futWebClubSummary', data: clubSummaryJson })
-      Logger.logWithTimestamp(
-        'info',
+      saveData({
+        type: 'futWebClubSummary',
+        name: 'FUT WEB APP Club Summary',
+        data: clubSummaryJson,
+      })
+      logInfo(
         `[💾 SAVE FUT WEB CLUB SUMMARY  🟢]:`,
-        `\n`
+        'Club summary saved to disk!'
       )
     } catch (error) {
-      Logger.logWithTimestamp(
-        'error',
-        `[💾 SAVE FUT WEB CLUB SUMMARY  🔴]:`,
-        `\n`
-      )
+      logError(`[💾 SAVE FUT WEB CLUB SUMMARY  🔴]:`, error as Error)
 
       throw error
     }
@@ -117,17 +119,12 @@ export const handleFutWebAppClubSummary: HandleFutWebClubSummary = (
   if (save) {
     try {
       saveData({ type: 'clubSummary', data: { map, list } })
-      Logger.logWithTimestamp(
-        'info',
+      logSuccess(
         `[💾 SAVE PROCESSED CLUB SUMMARY  🟢]:`,
-        `\n`
+        'Club summary saved successfully!'
       )
     } catch (error) {
-      Logger.logWithTimestamp(
-        'error',
-        `[💾 SAVE PROCESSED CLUB SUMMARY  🔴]:`,
-        `\n`
-      )
+      logError(`[💾 SAVE PROCESSED CLUB SUMMARY  🔴]:`, error as Error)
 
       throw error
     }
