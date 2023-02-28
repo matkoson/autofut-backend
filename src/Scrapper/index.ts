@@ -12,29 +12,26 @@ import { Cluster } from 'puppeteer-cluster'
 
 import { PuppeteerExtra } from 'puppeteer-extra'
 
-import saveFutbinPrice from '../Club/saveFutbinPrice.js'
 import { getTimestamp } from '../utils/index.js'
 import { ClubPlayer } from '../types/index.js'
 import Logger from '../logger/index.js'
-import { validateFutbinStats } from '../utils/validate/validateFutbinStats.js'
 import { validateString } from '../utils/validate/index.js'
 
-import FutbinParser from './FutbinParser/index.js'
-import { defaultFutbinStatsData } from './FutbinParser/default.js'
-import { FutbinStats } from './FutbinParser/types.js'
+import FutbinScrapper from './Futbin/index.js'
+import { defaultFutbinStatsData } from './Futbin/default.js'
+import { FutbinPlayer } from './Futbin/types.js'
 
 const DEBUG = false
 
-const { logInfo, logError, logSuccess } = Logger
+const TAG = '[🏴‍☠️ SCRAPPER  🏴‍☠️]:'
+const logger = new Logger(TAG)
 
-// add stealth plugin and use defaults (all evasion techniques)
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-// Add adblocker plugin to block all ads and trackers (saves bandwidth)
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-
-// Anonymize user agent
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+type FutbinTaskResponseHandler = (
+  id: string,
+  playerName: string,
+  rating: string,
+  futbinPlayer: FutbinPlayer
+) => void
 
 type TaskFunction<ExpectedTaskOutput, Data> = ({
   page,
@@ -55,11 +52,6 @@ type FutbinSearchPlayerScreenStatsTask = {
   id: string
   playerName: string
   url: string
-}
-
-export interface MetaData {
-  href: string
-  timestamp: number
 }
 
 const BROWSER_WIDTH = 800
@@ -101,7 +93,7 @@ export default class Scrapper {
   static Instance: Scrapper
   browser: Browser | null = null
   puppeteer: Browser | null = null
-  futbinScrapper: FutbinParser | null = null
+  futbin: FutbinScrapper | null = null
 
   constructor() {
     if (Scrapper.Instance) {
@@ -133,10 +125,18 @@ export default class Scrapper {
   }
 
   private saveScreenshot = async (path: string, page: Page) => {
-    await page.screenshot({
-      path: `${path}`,
-      fullPage: true,
-    })
+    try {
+      await page.screenshot({
+        path: `${path}`,
+        fullPage: true,
+      })
+    } catch (err) {
+      logger.logError(
+        `[🤬 ERROR REPORT]:`,
+        err as Error,
+        `Error while saving screenshot!`
+      )
+    }
   }
 
   private saveHtml = async (path: string, page: Page) => {
@@ -156,8 +156,9 @@ export default class Scrapper {
     textStructure?: string | null
   ) => {
     try {
-      logError(
-        `[🤬 ERROR REPORT]: Generating error report for player: '${playerName}'`
+      logger.logInfo(
+        `[🤬 ERROR REPORT]:`,
+        `Generating error report for player: ${playerName} - rating: ${rating}`
       )
       const dirPath = `./src/data/err/futbinPrice`
       // First, check if dir exists, if not, create it
@@ -192,16 +193,10 @@ export default class Scrapper {
         this.saveTextStructure(`${path}-text_structure.json`, textStructure)
       }
     } catch (error) {
-      logError(
-        `[🤬 ERROR REPORT]: Error, while generating: ${
-          (error as Error).message
-        }`
-      )
-      console.error(error)
+      logger.logError(`[🤬 ERROR REPORT  🤬]:`, error as Error)
     }
   }
 
-  private currentUserAgentIndex = 0
   private setUpPage = async () => {
     // const { validUserAgents } = Scrapper
     if (!this.browser) {
@@ -218,7 +213,7 @@ export default class Scrapper {
       const screenshotDir = './src/puppeteer/screenshots'
 
       this.shouldRunTestSuite = false
-      logInfo(`Testing adblocker plugin...`)
+      logger.logInfo(TAG, `Testing adblocker plugin...`)
       await page.goto('https://www.vanityfair.com')
       await page.waitForTimeout(1000)
       await this.saveScreenshot(
@@ -226,7 +221,7 @@ export default class Scrapper {
         page
       )
 
-      logInfo(`Testing the stealth plugin...`)
+      logger.logInfo(TAG, `Testing the stealth plugin...`)
       await page.goto('https://bot.sannysoft.com')
       await page.waitForTimeout(5000)
       await this.saveScreenshot(
@@ -234,7 +229,7 @@ export default class Scrapper {
         page
       )
 
-      logInfo(`All done, check the screenshots. ✨`)
+      logger.logInfo(TAG, `Page setup finished!`)
     }
 
     return page
@@ -247,13 +242,13 @@ export default class Scrapper {
     )
   }
 
-  private scrapFutbinStatsTask = async ({
+  private scrapFutbinPlayerTask = async ({
     page,
     data,
   }: {
     page: Page
     data: FutbinSearchPlayerScreenStatsTask
-  }): Promise<unknown> => {
+  }): Promise<FutbinPlayer> => {
     const { playerName, rating, url } = data
     await this.preparePage(page)
 
@@ -261,60 +256,66 @@ export default class Scrapper {
       throw new Error('Cluster is not initialized!')
     }
 
-    let futbinStats = defaultFutbinStatsData
+    let futbinPlayer = defaultFutbinStatsData
     try {
-      this.futbinScrapper = new FutbinParser(playerName, rating, page, url)
-      futbinStats = await this.futbinScrapper.extract()
+      this.futbin = new FutbinScrapper(playerName, rating, page, url)
 
-      // validateFutbinStats(futbinStats)
-      validateString(futbinStats.prevPrices, 'prevPrices')
-      validateString(futbinStats.PACE, 'pace')
-      validateString(futbinStats.SHOOTING, 'shooting')
-      validateString(futbinStats.PASSING, 'passing')
-      validateString(futbinStats.DRIBBLING, 'dribbling')
-      validateString(futbinStats.DEFENDING, 'defending')
-      validateString(futbinStats.PHYSICALITY, 'physicality')
-      validateString(futbinStats.playerFutbinUrl, 'playerFutbinUrl')
-      validateString(futbinStats.firstName, 'firstName')
-      validateString(futbinStats.lastName, 'lastName')
+      futbinPlayer = await this.futbin.getPlayer()
 
-      Logger.logWithTimestamp(
-        `info`,
-        `[🟢 100% SUCCESS 🟢]:`,
-        `\nfor player: (⚽️ '${playerName.toUpperCase()}' ⚽️)(💯 '${rating}' 💯)!\n`
+      /* Validate essential values. */
+      validateString(playerName, rating, futbinPlayer.prevPrices, 'prevPrices')
+      validateString(playerName, rating, futbinPlayer.PACE, 'pace')
+      validateString(playerName, rating, futbinPlayer.SHOOTING, 'shooting')
+      validateString(playerName, rating, futbinPlayer.PASSING, 'passing')
+      validateString(playerName, rating, futbinPlayer.DRIBBLING, 'dribbling')
+      validateString(playerName, rating, futbinPlayer.DEFENDING, 'defending')
+      validateString(
+        playerName,
+        rating,
+        futbinPlayer.PHYSICALITY,
+        'physicality'
       )
-      Logger.logWithTimestamp(
-        'info',
-        `[🟢 100% SUCCESS 🟢]:`,
-        `Stats: '${JSON.stringify(futbinStats, null, 2)}'!`
+      validateString(
+        playerName,
+        rating,
+        futbinPlayer.playerFutbinUrl,
+        'playerFutbinUrl'
       )
-      if (futbinStats.price === '0') {
-        Logger.logWithTimestamp(
-          'info',
+      validateString(playerName, rating, futbinPlayer.firstName, 'firstName')
+      validateString(playerName, rating, futbinPlayer.lastName, 'lastName')
+
+      logger.logSuccess(
+        `[🟢 100% SUCCESS 🟢]:`,
+        `for player: \n(⚽️ '${playerName.toUpperCase()}' ⚽️)(💯 '${rating}' 💯)!\n`
+      )
+      logger.logSuccess(
+        `[🟢 100% SUCCESS 🟢]:`,
+        `Stats: '${JSON.stringify(futbinPlayer, null, 2)}'!`
+      )
+      if (futbinPlayer.price === '0') {
+        logger.logInfo(
           `[🟢 PRICE '0' 🔵]:`,
           ` Price is eq to '0'! Might be valid, might be not. Reporting!`
         )
 
-        const textStructure = this.futbinScrapper?.debugFutbinStats()
+        const textStructure = this.futbin?.debugFutbinStats()
         await this.generateErrorReport(playerName, rating, page, textStructure)
       }
-      return futbinStats
+      return futbinPlayer
     } catch (err) {
-      Logger.logWithTimestamp(
-        'info',
-
+      logger.logError(TAG, err as Error)
+      logger.logWarn(
         `[🟡 NOT 100％ 🟡]:`,
         ` player: ('${playerName}')('${rating}')! Reporting!`
       )
-      Logger.logWithTimestamp(
-        'info',
+      logger.logWarn(
         `[🟡 NOT 100％ 🟡]:`,
-        `Stats '${JSON.stringify(futbinStats, null, 2)}'!`
+        `Stats '${JSON.stringify(futbinPlayer, null, 2)}'!`
       )
-      const textStructure = this.futbinScrapper?.debugFutbinStats()
+      const textStructure = this.futbin?.debugFutbinStats()
 
       await this.generateErrorReport(playerName, rating, page, textStructure)
-      return futbinStats
+      return futbinPlayer
     }
   }
 
@@ -342,7 +343,7 @@ export default class Scrapper {
   }
 
   waitForClusterToFinish = async () => {
-    logInfo('Waiting for cluster to be idle...')
+    logger.logInfo(TAG, 'Waiting for cluster to be idle...')
     if (!this.cluster) {
       throw new Error('Cluster is not initialized!')
     }
@@ -350,13 +351,13 @@ export default class Scrapper {
     await this.cluster.idle()
     await this.cluster.close()
 
-    logInfo('Cluster finished working!')
+    logger.logInfo(TAG, 'Cluster closed!')
 
-    logInfo('Closing browser...')
     this.browser?.close()
+    logger.logInfo(TAG, 'Browser closed!')
   }
 
-  queueClusterTask = <ExpectedOutput, TaskData>(
+  private queueClusterTask = <ExpectedOutput, TaskData>(
     taskConfig: TaskConfig<ExpectedOutput, TaskData>
   ) => {
     if (!this.cluster) {
@@ -364,32 +365,24 @@ export default class Scrapper {
     }
     const { CLUSTER_TASK, data, taskName } = taskConfig
 
-    Logger.logWithTimestamp(
-      'info',
-      `[🍒 QUEUE 🍒]:`,
-      `[CLUSTER_TASK]: ${taskName} queued!`
-    )
+    logger.logDebug(`[🍒 QUEUE 🍒]:`, `[CLUSTER_TASK]: ${taskName} queued!`)
 
     const clusterTask = this.cluster.execute(data, CLUSTER_TASK)
 
     return clusterTask
   }
-  setUpCluster = async () => {
+
+  private setUpCluster = async () => {
     // Create a cluster with 2 workers
     this.cluster = await Cluster.launch(clusterConfig)
-    logInfo('scrapper cluster initialized!')
+    logger.logInfo(TAG, 'Cluster is up and running!')
   }
 
-  scrapSearchResultsRow = async (
+  private scrapFutbinPlayer = async (
     id: string,
     playerName: string,
     rating: string,
-    responseHandler: (
-      id: string,
-      playerName: string,
-      rating: string,
-      futbinStats: FutbinStats
-    ) => void
+    responseHandler: FutbinTaskResponseHandler
   ) => {
     const url = `https://www.futbin.com/players?page=1&search=%27${playerName}%27`
     const taskConfig = {
@@ -399,54 +392,43 @@ export default class Scrapper {
         rating,
         url,
       },
-      taskName: `scrapFutbinStatsTask for ${playerName}`,
-      CLUSTER_TASK: this.scrapFutbinStatsTask,
+      taskName: `scrapFutbinTask for ${playerName}`,
+      CLUSTER_TASK: this.scrapFutbinPlayerTask,
     }
 
-    const searchResultsRowStats = await this.queueClusterTask<
+    const futbinPlayer: FutbinPlayer = await this.queueClusterTask<
       unknown,
       FutbinSearchPlayerScreenStatsTask
     >(taskConfig)
 
-    if (!searchResultsRowStats) {
+    if (!futbinPlayer) {
       throw new Error(
         `Futbin search results row stats for ${playerName} are not defined!`
       )
     }
 
-    responseHandler(id, playerName, rating, searchResultsRowStats)
+    responseHandler(id, playerName, rating, futbinPlayer)
   }
 
-  scrapFutbinPlayers = async (
+  scrapFutbinPlayerList = async (
     playerList: ClubPlayer[],
-    responseHandler: (
-      id: string,
-      playerName: string,
-      rating: string,
-      futbinStats: FutbinStats
-    ) => void
+    responseHandler: FutbinTaskResponseHandler
   ) => {
     for (let index = 0; index < playerList.length; index++) {
       const clubPlayer = playerList[index]
       const { id, identity } = clubPlayer
-      const { firstName, lastName } = identity
+      const { firstName, lastName, rating } = identity
 
       const fullPlayerName = `${firstName} ${lastName}`
-      const rating = String(clubPlayer.details.inGameStats.rating)
       // eslint-disable-next-line no-await-in-loop
-      await this.scrapSearchResultsRow(
-        id,
-        fullPlayerName,
-        rating,
-        responseHandler
-      )
+      await this.scrapFutbinPlayer(id, fullPlayerName, rating, responseHandler)
     }
 
     await this.waitForClusterToFinish()
   }
 
   init = async () => {
-    logInfo('At scrapper init!')
+    logger.logInfo(TAG, 'Initializing scrapper...')
     // E.g. 100[ms]
     const slowMo = 500
 
@@ -455,6 +437,7 @@ export default class Scrapper {
       await this.setUpBrowser({ headless, devtools, slowMo })
       await this.setUpPage()
       await this.setUpCluster()
+      logger.logSuccess(TAG, '\n\n✅ Scrapper initialized! ✅\n\n')
       return true
     } catch (err) {
       console.error(err)

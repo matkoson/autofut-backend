@@ -8,6 +8,9 @@ import Logger from '../../../logger/index.js'
 import { defaultPriceBoxData } from './default.js'
 import { dataMap } from './dataMap.js'
 
+const TAG = '[💰 PRICE_BOX_PARSER 🖖]:'
+const { logInfo, logError, logSuccess, logWarn, logDebug } = new Logger(TAG)
+
 class FutbinPriceBoxParser {
   private mParser: MParser
   private playerName: string
@@ -126,11 +129,7 @@ class FutbinPriceBoxParser {
       )
       return null
     }
-    Logger.logWithTimestamp(
-      'info',
-      '[🟦 DEBUG]:',
-      ' PARSER: returning text structure.'
-    )
+    logDebug(TAG, ' PARSER: returning text structure.')
     return JSON.stringify(this.mParser.getFullStructure(), null, 2)
   }
   //

@@ -1,0 +1,5 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="debug:replay" type="NodeJSConfigurationType" node-parameters="--experimental-json-modules --enable-source-maps" path-to-js-file="$PROJECT_DIR$/src/cli/replay.js" working-dir="$PROJECT_DIR$">
+    <method v="2" />
+  </configuration>
+</component>

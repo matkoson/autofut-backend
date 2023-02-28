@@ -4,7 +4,7 @@ export const defaultInfoTableData: FutbinInfoTableData = {
   firstName: null,
   lastName: null,
   fullName: null,
-  alternativePositions: '',
+  alternativePositions: null,
   accelerationType: null,
   clubName: null,
   nationName: null,

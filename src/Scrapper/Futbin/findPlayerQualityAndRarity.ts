@@ -2,6 +2,9 @@ import * as Puppeteer from 'puppeteer'
 
 import Logger from '../../logger/index.js'
 
+const TAG = '[✂️ FIND_PLAYER_QUALITY_AND_RARITY ✂️]:'
+const logger = new Logger(TAG)
+
 const getRarityText = (attributeType: string | null, playerName: string) => {
   /* '0' is 'common', '1' is 'rare', everything above is 'special' */
   if (!attributeType) {
@@ -30,6 +33,7 @@ const getRarityText = (attributeType: string | null, playerName: string) => {
 
 const findPlayerQualityAndRarity = async (
   playerName: string,
+  rating: string,
   page: Puppeteer.Page
 ): Promise<{ quality: string | null; rarity: string | null }> => {
   const { quality, rarity, playerCard } = await page.evaluate(() => {
@@ -41,7 +45,8 @@ const findPlayerQualityAndRarity = async (
   })
 
   if (!quality || !rarity) {
-    console.error(`[✂️ FIND_PLAYER_QUALITY_AND_RARITY  ✂️]:\n 🔴🔴🔴 failed!`)
+    const error = new Error(`Failed for player: (${playerName})(${rating})!`)
+    logger.logError(TAG, error)
     return { quality: null, rarity: null }
   }
 

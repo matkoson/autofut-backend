@@ -8,8 +8,12 @@
 import MParser from '@matkoson/parser'
 
 import { FutbinInfoTableData, FutbinPriceBoxData } from '../types.js'
+import Logger from '../../../logger/index.js'
 
 import { defaultInfoTableData } from './default.js'
+
+const TAG = '[🖼 INFO_TABLE  🖼]:'
+const logger = new Logger(TAG)
 
 class FutbinPriceBoxParser {
   private mParser: MParser
@@ -75,7 +79,8 @@ class FutbinPriceBoxParser {
         return false
       })
       if (typeof statNameIndex !== 'number' || statNameIndex < 0) {
-        throw new Error(`Stat name ${statName} not found in structure`)
+        logger.logDebug(TAG, `Stat name ${statName} not found in structure`)
+        return null
       }
       const maybeStatValue = structure[statNameIndex + 1]
       const statValue =
@@ -89,7 +94,7 @@ class FutbinPriceBoxParser {
 
       return statValue
     } catch (err) {
-      console.error(err)
+      logger.logError(TAG, err as Error)
       return null
     }
   }
@@ -110,6 +115,10 @@ class FutbinPriceBoxParser {
     if (this.infoTableData.firstName && this.infoTableData.lastName) {
       this.infoTableData.fullName = `${this.infoTableData.firstName} ${this.infoTableData.lastName}`
     }
+    this.infoTableData.alternativePositions = this.findPiece(
+      'Alt,POS',
+      paragraphs
+    )
     this.infoTableData.accelerationType = this.findPiece('AcceleRATE', texts)
     this.infoTableData.clubName = this.findPiece('Club', texts)
     this.infoTableData.nationName = this.findPiece('Nation', texts)

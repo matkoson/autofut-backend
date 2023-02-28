@@ -4,11 +4,15 @@ import * as Puppeteer from 'puppeteer'
 import { validateString } from '../../utils/validate/index.js'
 import Logger from '../../logger/index.js'
 
+const TAG = '[🧐 FIND_PLAYER_URL 🧐]:'
+const logger = new Logger(TAG)
+
 const findPlayerFutbinUrl = async (
   playerName: string,
   rating: string,
   page: Puppeteer.Page
 ): Promise<string> => {
+  const url = await page.url()
   const tableRows = await page.$$('tbody tr')
 
   if (!tableRows.length) {
@@ -27,34 +31,19 @@ const findPlayerFutbinUrl = async (
     })
 
     if (isWcVersion) {
-      Logger.logWithTimestamp(
-        'info',
-        `[🔵 FIND_PLAYER_FUTBIN_URL 🔵]:`,
+      logger.logDebug(
+        TAG,
         `WC player version found for player: ${playerName}! Discarding...`
       )
       continue
     }
 
-    const hasValidRating = await ratingElement?.evaluate(
-      (spanElement, expectedRating) => {
-        return spanElement.textContent?.trim() === expectedRating
-      },
-      rating
-    )
-    if (hasValidClassName && hasValidRating) {
-      if (futbinPlayerUrl) {
-        Logger.logWithTimestamp(
-          'warn',
-          `[🟡 FIND_PLAYER_FUTBIN_URL 🟡]:`,
-          `player: (${playerName})(${rating}): Multiple valid Futbin player URLs found! Investigate!`
-        )
-        const rowHtml = await tableRow.evaluate((element) => {
-          return element.innerHTML
-        })
-      }
-      const rowHtml = await tableRow.evaluate((element) => {
-        return element.innerHTML
-      })
+    const ratingElementText = await ratingElement?.evaluate((spanElement) => {
+      return spanElement.textContent?.trim()
+    })
+
+    const hasExpectedRating = String(ratingElementText) === String(rating)
+    if (hasValidClassName && hasExpectedRating) {
       const playerUrl = await tableRow.evaluate((element) => {
         const linkElements = [...element.querySelectorAll('[data-site-id]')]
 
@@ -66,17 +55,25 @@ const findPlayerFutbinUrl = async (
         return `https://www.futbin.com${linkElements[0].getAttribute('href')}`
       })
 
+      if (futbinPlayerUrl) {
+        logger.logWarn(
+          TAG,
+          `player: (${playerName})(${rating}): Multiple valid Futbin player URLs found! Investigate! Another valid URL: ${playerUrl}, ratingElementText: ${ratingElementText}`,
+          300
+        )
+      }
+
       futbinPlayerUrl = playerUrl
     }
   }
 
   if (!futbinPlayerUrl) {
     throw new Error(
-      '[🔴 FIND_PLAYER_FUTBIN_URL]: No valid Futbin player URL found'
+      `[🔴 FIND_PLAYER_FUTBIN_URL]: player: (${playerName})(${rating}) No valid Futbin player URL found`
     )
   }
 
-  validateString(futbinPlayerUrl, 'Futbin player URL')
+  validateString(playerName, rating, futbinPlayerUrl, 'Futbin player URL')
   return futbinPlayerUrl
 }
 

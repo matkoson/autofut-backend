@@ -19,8 +19,16 @@ const makeLogEntries = (
   const logEntries = []
 
   playerPriceList.forEach((priceEntry, index) => {
-    const { timestamp, rating, quality, rarity, price, name, isUntradeable } =
-      priceEntry
+    const {
+      timestamp,
+      rating,
+      quality,
+      rarity,
+      price,
+      prevPrices,
+      name,
+      isUntradeable,
+    } = priceEntry
 
     if (
       ![timestamp, rating, quality, rarity, price, name, isUntradeable].every(
@@ -39,7 +47,7 @@ const makeLogEntries = (
     }
 
     const nameLog = `[⚽️'${name}'️]`
-    const priceLog = `[💰'${price}']`
+    const priceLog = `[💰'${price}'][📇'${prevPrices}']`
     const ratingLog = `[💯'${rating}']`
 
     const qualityRarity = getQualityRarityLog(quality, rarity)

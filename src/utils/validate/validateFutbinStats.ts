@@ -1,46 +1,78 @@
 /* eslint-disable func-style */
 
-import { FutbinStats } from '../../Scrapper/FutbinParser/types.js'
+import { FutbinPlayer } from '../../Scrapper/Futbin/types.js'
 
-import { validateArrayOfType, validateString } from './index.js'
+import { validateString } from './index.js'
 
+// eslint-disable-next-line max-lines-per-function
 export function validateFutbinStats(
-  futbinStats: FutbinStats
-): asserts futbinStats is FutbinStats {
-  validateString(futbinStats.price, 'price')
-  validateString(futbinStats.prevPrices, 'prevPrices')
-  validateString(futbinStats.prp, 'prp')
-  validateString(futbinStats.priceRange, 'priceRange')
-  validateString(futbinStats.playerFutbinId, 'playerFutbinId')
-  validateString(futbinStats.playerFutbinUrl, 'playerFutbinUrl')
-  validateString(futbinStats.firstName, 'firstName')
-  validateString(futbinStats.lastName, 'lastName')
-  validateString(futbinStats.clubName, 'clubName')
-  validateString(futbinStats.nationName, 'nationName')
-  validateString(futbinStats.leagueName, 'leagueName')
-  // validateString(futbinStats.rating, 'rating')
-  // validateString(futbinStats.preferredPosition, 'preferredPosition')
-  validateArrayOfType<string>(
-    futbinStats.alternativePositions,
-    'alternativePositions',
-    'string'
+  playerName: string,
+  rating: string,
+  futbinPlayer: FutbinPlayer
+): asserts futbinPlayer is FutbinPlayer {
+  validateString(playerName, rating, futbinPlayer.price, 'price')
+  validateString(playerName, rating, futbinPlayer.prevPrices, 'prevPrices')
+  validateString(playerName, rating, futbinPlayer.prp, 'prp')
+  validateString(playerName, rating, futbinPlayer.priceRange, 'priceRange')
+  validateString(
+    playerName,
+    rating,
+    futbinPlayer.playerFutbinId,
+    'playerFutbinId'
   )
-  validateString(futbinStats.revision, 'revision')
-  validateString(futbinStats.accelerationType, 'accelerationType')
-  validateString(futbinStats.skillMovesLevel, 'skillMovesLevel')
-  validateString(futbinStats.weakFootLevel, 'weakFootLevel')
-  validateString(futbinStats.attackingWorkRate, 'workRates')
-  validateString(futbinStats.defensiveWorkRate, 'workRates')
-  validateString(futbinStats.PACE, 'pace')
-  validateString(futbinStats.SHOOTING, 'shooting')
-  validateString(futbinStats.PASSING, 'passing')
-  validateString(futbinStats.DRIBBLING, 'dribbling')
-  validateString(futbinStats.DEFENDING, 'defending')
-  validateString(futbinStats.PHYSICALITY, 'physicality')
-  validateString(futbinStats.height, 'height')
-  validateString(futbinStats.bodyType, 'bodyType')
-  validateString(futbinStats.weight, 'weight')
-  validateString(futbinStats.price, 'price')
+  validateString(
+    playerName,
+    rating,
+    futbinPlayer.playerFutbinUrl,
+    'playerFutbinUrl'
+  )
+  validateString(playerName, rating, futbinPlayer.firstName, 'firstName')
+  validateString(playerName, rating, futbinPlayer.lastName, 'lastName')
+  validateString(playerName, rating, futbinPlayer.clubName, 'clubName')
+  validateString(playerName, rating, futbinPlayer.nationName, 'nationName')
+  validateString(playerName, rating, futbinPlayer.leagueName, 'leagueName')
+  // validateStriplayerName,rating, futbinStatsats.rating, 'rating')
+  // validateStriplayerName,rating, futbinStatsats.preferredPosition, 'preferredPosition')
+  // validateStriplayerName,rating, futbinStatsats.alternativePositions, 'alternativePositions')
+  validateString(playerName, rating, futbinPlayer.revision, 'revision')
+  validateString(
+    playerName,
+    rating,
+    futbinPlayer.accelerationType,
+    'accelerationType'
+  )
+  validateString(
+    playerName,
+    rating,
+    futbinPlayer.skillMovesLevel,
+    'skillMovesLevel'
+  )
+  validateString(
+    playerName,
+    rating,
+    futbinPlayer.weakFootLevel,
+    'weakFootLevel'
+  )
+  validateString(
+    playerName,
+    rating,
+    futbinPlayer.attackingWorkRate,
+    'workRates'
+  )
+  validateString(
+    playerName,
+    rating,
+    futbinPlayer.defensiveWorkRate,
+    'workRates'
+  )
+  validateString(playerName, rating, futbinPlayer.PACE, 'pace')
+  validateString(playerName, rating, futbinPlayer.SHOOTING, 'shooting')
+  validateString(playerName, rating, futbinPlayer.PASSING, 'passing')
+  validateString(playerName, rating, futbinPlayer.DRIBBLING, 'dribbling')
+  validateString(playerName, rating, futbinPlayer.DEFENDING, 'defending')
+  validateString(playerName, rating, futbinPlayer.PHYSICALITY, 'physicality')
+  validateString(playerName, rating, futbinPlayer.height, 'height')
+  validateString(playerName, rating, futbinPlayer.bodyType, 'bodyType')
+  validateString(playerName, rating, futbinPlayer.weight, 'weight')
+  validateString(playerName, rating, futbinPlayer.price, 'price')
 }
-
-

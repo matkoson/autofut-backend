@@ -13,6 +13,7 @@ export const generateId = (length: number): string => {
 
 export const debug = async (page: Puppeteer.Page) => {
   await page.evaluate(() => {
+    // eslint-disable-next-line no-debugger
     debugger
   })
 }

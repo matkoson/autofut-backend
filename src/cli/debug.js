@@ -2,28 +2,29 @@
 
 import glob from "glob";
 import path from "path";
-import backend from '../dist/esm/index.mjs';
+import backend from "../../dist/esm/index.mjs";
+
 export const getDuration = (startTime, endTime) => {
   /* in ms*/
-  const duration = endTime - startTime
+  const duration = endTime - startTime;
   /* in sec */
-  const inSeconds = Math.floor((duration / 1000) % 60)
+  const inSeconds = Math.floor((duration / 1000) % 60);
   /* in min */
-  const inMinutes = Math.floor(duration / 1000 / 60)
+  const inMinutes = Math.floor(duration / 1000 / 60);
 
   // logInfo(
   //   `[⏱  DURATION]: Response took ${inMinutes} minutes, ${inSeconds} seconds`
   // )
-  return `${inMinutes} minutes, ${inSeconds} seconds`
-}
+  return `${inMinutes} minutes, ${inSeconds} seconds`;
+};
 
 
 async function debug() {
-  const startTime = performance.now()
+  const startTime = performance.now();
 
   const currentUrl = new URL(import.meta.url);
   const currentDir = path.dirname(currentUrl.pathname);
-  const timestampFileNamePattern = path.join(currentDir, "..", "node_modules", "@matkoson", "parser", "version-*.txt");
+  const timestampFileNamePattern = path.join(currentDir, "..", "..", "node_modules", "@matkoson", "parser", "version-*.txt");
   const files = glob.sync(timestampFileNamePattern);
   if (files.length === 0) {
     console.error("No file found matching the pattern:", timestampFileNamePattern);
@@ -38,27 +39,23 @@ async function debug() {
 
   // ########################################
 
-  // const firstName = 'Sergio'
-  // const lastName = 'Busquets Burgos'
-  // const rating = '85'
+  const firstName = "Esequiel";
+  const lastName = "Barco";
+  const rating = "76";
 
   // ########################################
 
-  const firstName = 'Paolo'
-  const lastName = 'Maldini'
-  const rating = '88'
-
-  // ########################################
+  console.log(`[🐛 DEBUG]: (${firstName})(${lastName})(${rating})`);
 
 
-  const futbinStats = await backend.cli.debugPage(firstName, lastName, rating)
+  const futbinStats = await backend.cli.debugPage(firstName, lastName, rating);
 
-  const endTime = performance.now()
-  const duration = getDuration(startTime, endTime)
+  const endTime = performance.now();
+  const duration = getDuration(startTime, endTime);
 
   console.log(`[▲  DURATION  ⏱]: ${duration}`);
 
-  console.log(JSON.stringify(futbinStats, null, 2))
+  console.log(JSON.stringify(futbinStats, null, 2));
 }
 
 await debug();

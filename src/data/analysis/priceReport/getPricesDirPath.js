@@ -6,11 +6,14 @@ const getPriceDirPath = () => {
   /* check if directory for the current day exists, if not, create it. */
   const analysisDirPath = path.join(
     path.dirname(url.fileURLToPath(import.meta.url)),
-    `../../../../analysis/prices`
+    'src',
+    'data',
+    'analysis',
+    'priceReport'
   )
 
   if (!fs.existsSync(analysisDirPath)) {
-    fs.mkdirSync(analysisDirPath)
+    fs.mkdirSync(analysisDirPath, { recursive: true })
   }
 
   return analysisDirPath

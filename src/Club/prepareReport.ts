@@ -10,7 +10,7 @@ const prepareReport = (clubReport: ClubReport, duration: string) => {
   //     100
   // )}%`
 
-  // logInfo(`[👍 SUCCESS RATE]: ${successRate}%`)
+  // logInfo(TAG,`[👍 SUCCESS RATE]: ${successRate}%`)
 
   const enhancedClubReport = {
     timestamp: getTimestamp(),

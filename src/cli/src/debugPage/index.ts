@@ -1,26 +1,49 @@
-import FutbinScrapper from '../../../Scrapper/FutbinParser/index.js'
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable no-debugger */
 
-import { initPuppeteer } from './initPuppeteer.js'
+import Scrapper from '../../../Scrapper/index.js'
+import { FutbinPlayer } from '../../../Scrapper/Futbin/types.js'
+import { findPlayerByNameRating } from '../../../data/findSinglePlayer.js'
+import getClubPlayerStructure from '../../testData/getClubPlayerStructure.js'
+import Logger from '../../../logger/index.js'
+
+const TAG = '[🎎  DP]:'
+const logger = new Logger(TAG)
 
 const debugPage = async (
   firstName: string,
   lastName: string,
   rating: string
 ) => {
-  const { page, browser } = await initPuppeteer()
-  const url = `https://www.futbin.com/players?page=1&search=%27${firstName}%20${lastName}%27`
+  // const url = `https://www.futbin.com/players?page=1&search=%27${firstName}%20${lastName}%27`
 
-  const futbinScrapper = new FutbinScrapper(
-    `${firstName} ${lastName}`,
-    rating,
-    page,
-    url
+  const player = findPlayerByNameRating(firstName, lastName, rating)
+
+  const handleFutbinPlayer = (
+    id: string,
+    playerName: string,
+    rating: string,
+    futbinStats: FutbinPlayer
+  ) => {
+    debugger
+  }
+
+  const clubPlayer = getClubPlayerStructure(
+    player.id,
+    player?.futbin?.firstName || player.firstName,
+    player?.futbin?.lastName || player.lastName,
+    player.rating
   )
-  const futbinStats = await futbinScrapper.extract()
-  console.info('[🎎  DP]: Logging debug info...')
-  // futbinScrapper.logDebug('textStructure')
 
-  browser.close()
+  const scrapper = new Scrapper()
+  await scrapper.init()
+  const futbinStats = await scrapper.scrapFutbinPlayerList(
+    [clubPlayer],
+    handleFutbinPlayer
+  )
+
+  logger.logInfo('[🎎  DP]:', 'Logging debug info...')
+  // futbinScrapper.logDebug('textStructure')
 
   return futbinStats
 }

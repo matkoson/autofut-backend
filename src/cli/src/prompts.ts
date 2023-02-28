@@ -1,6 +1,6 @@
 import path from 'path'
 
-import prompts, { Choice, PromptObject } from 'prompts'
+import prompts, { PromptObject } from 'prompts'
 
 import handlePrompts from './handlePrompts.js'
 import {
@@ -8,6 +8,7 @@ import {
   getLatestFutWebClubSummaryFilename,
 } from './utils/index.js'
 
+// eslint-disable-next-line max-lines-per-function
 const prompt = async () => {
   const questions = [
     {

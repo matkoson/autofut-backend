@@ -1,4 +1,4 @@
-import { FutbinStats } from '../Scrapper/FutbinParser/types.js'
+import { FutbinPlayer } from '../Scrapper/Futbin/types.js'
 
 export type FutWebClubSummaryItem = {
   assetId: number
@@ -101,8 +101,8 @@ export type UnknownClubPlayerList = UnknownClubPlayer[]
 export type PlayerIdentity = {
   firstName: string
   lastName: string
-  futbinId: string
   rating: string
+  futbinId: string
 }
 
 export type FutbinPrices = {
@@ -128,7 +128,7 @@ export type ClubPlayer = {
   id: string
   identity: PlayerIdentity
   isUntradeable: boolean
-  futbin: FutbinStats
+  futbin: FutbinPlayer
   details: Omit<UnknownClubPlayer, 'isUntradeable'>
 }
 

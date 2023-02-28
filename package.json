@@ -8,8 +8,8 @@
   },
   "type": "module",
   "scripts": {
-    "getPrices": "node src/cli/src/run/runMakePricesReport.js",
-    "getTradePrices": "node src/cli/src/run/runMakePricesReport.js true",
+    "getPrices": "node src/cli/src/run/runMakePriceReport.js",
+    "getTradePrices": "node src/cli/src/run/runMakePriceReport.js true",
     "openPrices": "nvim analysis/prices/prices.txt",
     "openTradePrices": "nvim analysis/prices/prices.txt",
     "showTradePrices": "yarn getTradePrices && nvim analysis/prices/tradeable.txt",
@@ -23,15 +23,13 @@
     "start": "yarn build:once && node --enable-source-maps src/runAutofutBackend.js",
     "clean": "rm -rf src/puppeteer/screenshots/* src/data/err/*",
     "update:parser": "cp -r ./dist/html ../../parser/dist/",
-    "debug": "yarn update:parser && yarn build:once && nodemon --enable-source-maps src/debug.js --verbose --ignore 'dist/*' --ignore 'debug/*'",
-    "debug:o": "yarn update:parser && yarn build:once && node --enable-source-maps src/debug.js",
-    "rep": "yarn clean && yarn build:once && node --experimental-json-modules --enable-source-maps src/replay.js",
+    "debug": "yarn update:parser && yarn build:once && nodemon --enable-source-maps src/cli/debug.js --verbose --ignore 'dist/*' --ignore 'debug/*'",
+    "debug:o": "yarn update:parser && yarn build:once && node --enable-source-maps src/cli/debug.js",
     "debug:f": "yarn debug > debug/dp.txt",
-    "cli:c": "ts-node -P tsconfig.cli.json src/cli/src/commander.ts",
-    "cli:p": "ts-node -P tsconfig.cli.json src/cli/src/prompts.ts",
-    "cli:mkr:latest": "ts-node -P tsconfig.json src/cli/src/runMakeClubReport.ts ./src/data/rawClubSummary/latest/latest.json",
-    "yall": "yarn && yarn --cwd ./parser && yarn --cwd src/cli",
-    "yf": "rm -rf node_modules && yarn"
+    "price:update:interval": "yarn clean && yarn build:once && node --experimental-json-modules --enable-source-maps src/cli/replay.js",
+    "price:update:once": "ts-node -P tsconfig.cli.json src/cli/src/prompts.ts",
+    "pui": "yarn price:update:interval",
+    "puo": "yarn price:update:once"
   },
   "dependencies": {
     "@matkoson/parser": "/Users/matkoson/dev/repos/@matkoson/parser",

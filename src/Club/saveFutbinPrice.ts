@@ -4,8 +4,6 @@ import * as fs from 'fs'
 import { getTimestamp } from '../utils/index.js'
 import Logger from '../logger/index.js'
 
-const { logSuccess } = Logger
-
 type FutbinPriceData = {
   futbin: {
     timestamp: string
@@ -14,11 +12,13 @@ type FutbinPriceData = {
     quality: string | null
     isUntradeable: string
     price: string
+    prevPrices: string
     name: string
   }[]
 }
 
-const TAG = `[💾 PRICE SAVED 💾]:`
+const TAG = `[💾 SAVE PRICE 💰]:`
+const logger = new Logger(TAG)
 
 const saveFutbinPrice = (
   playerName: string,
@@ -26,12 +26,12 @@ const saveFutbinPrice = (
   isUntradeable: string,
   quality: string | null,
   rarity: string | null,
-  rawPrice: string
+  rawPrice: string,
+  prevPrices: string
 ): void => {
-  Logger.logWithTimestamp(
-    'info',
+  logger.logDebug(
     `[🆙 PRICE UPDATE 🆙]:`,
-    ` player: (⚽️ '${playerName}' ⚽️), rating: (💯 '${rating}' 💯), isUntradeable: (🔒 '${isUntradeable}' 🔒)`
+    `player: (⚽️ '${playerName}' ⚽️), rating: (💯 '${rating}' 💯), isUntradeable: (🔒 '${isUntradeable}' 🔒)`
   )
 
   const pricesDirPath = path.join(process.cwd(), 'src', 'data', 'price')
@@ -64,6 +64,7 @@ const saveFutbinPrice = (
           quality,
           rarity,
           price,
+          prevPrices,
           name: playerName,
         })
         const data = JSON.stringify(prices, null, 2)
@@ -71,7 +72,7 @@ const saveFutbinPrice = (
         fs.writeFileSync(newPath, data)
         fs.unlinkSync(oldPath)
 
-        Logger.logWithTimestamp('success', TAG, `(${playerName})(${rating})`)
+        logger.logSuccess(TAG, `(${playerName})(${rating})`)
         updatedFile = true
       }
     })
@@ -81,10 +82,27 @@ const saveFutbinPrice = (
         pricesDirPath,
         `(${playerName})(${rating})[${timestamp}].json`
       )
+      const preparePreviousPrices = (rawPrevPrices: string): string => {
+        /* Prepend with '<=', unless it's the last one */
+        const prevPrices = JSON.parse(rawPrevPrices)
+        const processedPrevPrices = prevPrices
+          .map((price: string, index: number) => {
+            if (index === prevPrices.length - 1) {
+              return `[${price}]`
+            }
+            return `[${price}]<=`
+          })
+          .join('')
+
+        return processedPrevPrices
+      }
       const prices: FutbinPriceData = { futbin: [] }
+      const processedPrevPrices = preparePreviousPrices(prevPrices)
+
       prices.futbin.unshift({
         timestamp,
         price: rawPrice,
+        prevPrices: processedPrevPrices,
         isUntradeable,
         quality,
         rarity,
@@ -98,16 +116,15 @@ const saveFutbinPrice = (
       }
 
       fs.writeFileSync(filePath, data)
-      Logger.logWithTimestamp(
-        'success',
+      logger.logDebug(
         TAG,
         `Successfully saved price for (${playerName})(${rating})`
       )
     }
   } catch (error) {
-    Logger.logWithTimestamp(
-      'error',
+    logger.logError(
       `[🎯 PRICE UPDATE 🎯]: FAILED 🔴🔴🔴 player:`,
+      error as Error,
       `(⚽️ '${playerName}' ⚽️), rating: (💯 '${rating}' 💯), isUntradeable: (🔒 '${isUntradeable}' 🔒)`
     )
     console.error(error)

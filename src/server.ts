@@ -5,7 +5,8 @@ import Club from './Club/index.js'
 import { getDuration } from './utils/index.js'
 import Logger from './logger/index.js'
 
-const { logInfo, logDebug, logError, logSuccess } = Logger
+const TAG = '[📟 SERVER  📟]:'
+const { logInfo, logDebug, logError, logSuccess } = new Logger(TAG)
 
 const runAutofutBackend = () => {
   const app = express()
@@ -18,16 +19,19 @@ const runAutofutBackend = () => {
   app.use(express.json())
   app.use(cors(corsOptions))
 
-  logDebug('Starting backend...')
+  logDebug(TAG, 'Starting backend...')
 
   app.post(
     '/sync_club',
     async (req: express.Request, res: express.Response) => {
-      logInfo("Received request: POST: '/sync_club'")
+      logInfo(TAG, "Received request: POST: '/sync_club'")
       const { rawClubSummary: futWebSummary, dis } = req.body || {}
 
       if (!futWebSummary || !dis) {
-        logInfo('/sync_club', 'Missing parameters: `rawClubSummary`, `dis`')
+        logInfo(
+          '[PATH=/sync_club]',
+          'Missing parameters: `rawClubSummary`, `dis`'
+        )
         res.status(400).json({
           error: 'Missing parameters: `rawClubSummary`, `dis`',
         })
@@ -41,7 +45,8 @@ const runAutofutBackend = () => {
         const clubReport = await club.makeClubReport(startTime)
 
         logSuccess(
-          '[🎉🎉🎉 FINISHED  🎉🎉🎉]: RES: /sync_club: returning club players list!'
+          `[🎉🎉🎉 FINISHED RESPONDING 🎉🎉🎉]:`,
+          `RES: /sync_club: returning club players list!`
         )
 
         res.status(200).json({
@@ -49,9 +54,13 @@ const runAutofutBackend = () => {
           error: null,
         })
       } catch (err) {
-        logError('RES: /sync_club: returning error: ', err)
+        logError(
+          `[📟 SERVER]:`,
+          err as Error,
+          `RES: /sync_club: returning error!`
+        )
         const duration = getDuration(startTime, performance.now())
-        logInfo(`[⏱  DURATION]: 'RES' took: ${duration}`)
+        logInfo(`[⏱  DURATION]:`, `'RES' took: ${duration}`)
 
         res.status(500).json({
           duration,
@@ -66,7 +75,7 @@ const runAutofutBackend = () => {
   )
 
   app.listen(port, () => {
-    logInfo(`Backend listening on port ${port}`)
+    logInfo(TAG, `Backend listening on port ${port}`)
   })
 }
 
